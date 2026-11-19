@@ -38,3 +38,13 @@ Parcelat me gjeotagim GPS (koordinata + hartë), kultivimet (mbjellje/vjelje), d
 
 ## Faza 5
 Kartela e gjurmueshmërisë (PDF/Excel) për çdo lot: vjelja → magazina → mostrat → inputet. Shembull i gjeneruar: `docs/kartela-gjurmueshmerise-shembull.pdf`. Faturat DHL/FedEx dhe llogaritë e analizave si raporte, import i të dhënave reale, punë pa internet.
+
+## Faza 6 — gjurmueshmëria e plotë (v0.3) — `0005_gjurmueshmeria.sql`, `0006_mostra_dhe_grumbullimi.sql`
+Zinxhiri i biznesit sipas BioBes-it real: **tokë (edhe djerr) → qira/kontratë → punime (plugim, frezim, lesë, nivelim) → mbjellje dhe trajtime (pleh, pesticid, foliar, ujitje; me ditë pritjeje para vjeljes) → korrje nga fermeri → grumbulluesi i zonës → dorëzim në qendër → përpunim (tharje, pastrim, prerje, klasifikim, vaj, paketim) → mostër në parcelë ose qendër → eksport te klienti me dokument**.
+
+- **Skema:** zonat me `collector_name`/`collectionPoint`/`region`, parcelat me `ownership` (pronësi/qira/e egër) dhe `status` (aktive/djerr/pushim), qira me afat e garanci, `land_operations`, `applications` (me `phi_days`), `batches` (me rendiment), pagesa me `paid_by` (kompani/grumbullues) dhe `receipt_no`, eksport me `customer_id`/`document_no`, dokumente biznesi (kontratë, faturë, fletë dorëzimi, certifikatë).
+- **Pamjet:** `zone_summary`, `lot_chain`, `lot_plots`, `plot_activity`, `batch_summary`, `purchase_payments` (të gjitha `security_invoker`, pra RLS vlen).
+- **Ekranet e reja:** *Gjurmueshmëria* (lot → parcela/fermer/grumbullues → mostra → përpunim → eksport, ose parcelë → historiku), *Puna në tokë* (punime + trajtime), *Përpunimi*, *Zonat*, plus menuja *Modulet*; blerjet lidhen me parcelën, mostrat me vendin e marrjes dhe laboratorin.
+- **Raportet:** kartela e gjurmueshmërisë tani përmban parcelat, grumbulluesin, mostrat (vend, laborator, lagështi, pastërti, vendim), batch-et me rendiment dhe eksportin me klient/dokument; shtohet **Raport zonash dhe grumbulluesish**.
+- **Testet:** `tests/test_gjurmimi.sql` (zinxhiri + RLS: fermeri sheh parcelën e vet, kompania tjetër s' sheh asgjë).
+- **Analiza e biznesit:** `docs/analiza-gjurmueshmeria.md` — rrjedha reale, rolet, 15 pyetjet e gjurmueshmërisë dhe ku përgjigjen në aplikacion.
