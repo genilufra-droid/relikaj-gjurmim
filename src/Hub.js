@@ -40,6 +40,14 @@ const GROUPS = [
     ],
   },
   {
+    title: "Të dhënat",
+    staffOnly: true,
+    items: [
+      ["fillimi", "Fillimi i shpejtë", "Katër hapa deri te puna reale", "rocket-outline"],
+      ["importo", "Importo Excel", "Zona, fermerë, parcela", "cloud-upload-outline"],
+    ],
+  },
+  {
     title: "Toka dhe financat",
     items: [
       ["toka", "Toka dhe qiratë", "Qira, pagesa, kujtues", "home-outline"],
@@ -51,7 +59,7 @@ const GROUPS = [
 
 export default function Hub({ role, onGo }) {
   const staff = role === "admin" || role === "staf";
-  const groups = GROUPS.map((g) => ({
+  const groups = GROUPS.filter((g) => !g.staffOnly || staff).map((g) => ({
     ...g,
     items: g.items.filter(([k]) => (k === "mostra" ? staff || role === "grumbullues" : true)),
   })).concat(

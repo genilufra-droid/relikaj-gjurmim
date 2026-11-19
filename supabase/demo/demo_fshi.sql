@@ -69,12 +69,13 @@ delete from public.farmers
 delete from public.zones
  where company_id = 2 and note = 'DEMO';
 
--- ---------- Produktet demo (mund të kenë mbetur pa lëvizje) ----------
+-- ---------- Produktet demo (tabela products s'ka kolonë «note» — njihen nga kodi) ----------
 delete from public.products
  where company_id = 2
-   and note = 'DEMO'
+   and code in ('115', '109', '204', '310', '401', '40')
    and not exists (select 1 from public.purchases p where p.product_id = public.products.id)
-   and not exists (select 1 from public.stock_moves m where m.product_id = public.products.id);
+   and not exists (select 1 from public.stock_moves m where m.product_id = public.products.id)
+   and not exists (select 1 from public.cultivations k where k.product_id = public.products.id);
 
 -- ---------- Klienti dhe magazina demo ----------
 delete from public.customers

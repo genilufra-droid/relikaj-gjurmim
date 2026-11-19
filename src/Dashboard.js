@@ -80,6 +80,23 @@ export default function Dashboard({ cid, role, onGo }) {
       {!!err && <ErrorBox message={"Statistikat nuk u ngarkuan: " + err} onRetry={load} />}
       {loading && !st && <Loading text="Po mblidhen të dhënat…" />}
 
+      {st && st.plots === 0 && (
+        <TouchableOpacity onPress={() => onGo("fillimi")} activeOpacity={0.85} style={{ marginTop: 14 }}>
+          <View style={[s.card, { backgroundColor: C.brandSoft, borderColor: C.brand, borderWidth: 1 }]}>
+            <View style={s.listRow}>
+              <View style={[s.iconCircle, { backgroundColor: "#fff" }]}>
+                <Ionicons name="rocket-outline" size={20} color={C.brand} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: C.brand, fontWeight: "800", fontSize: 15 }}>Filloni me katër hapa</Text>
+                <Text style={[s.mute, { marginTop: 2 }]}>Zona → grumbullues → fermerë → parcela. Ose importoni nga Excel.</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={C.brand} />
+            </View>
+          </View>
+        </TouchableOpacity>
+      )}
+
       {st && (
         <View style={hero.wrap}>
           {[

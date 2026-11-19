@@ -25,6 +25,8 @@ import Processing, { BatchForm } from "./src/Processing";
 import Zones, { ZoneForm } from "./src/Zones";
 import PlotDetail from "./src/PlotDetail";
 import Reminders from "./src/Reminders";
+import Import from "./src/Import";
+import Start from "./src/Start";
 
 const ROLE = { admin: "Administrator", staf: "Staf", grumbullues: "Grumbullues", fermer: "Fermer" };
 
@@ -38,6 +40,7 @@ export default function App() {
   const [work, setWork] = useState("punime");    // nënndarja e «Puna në tokë»
   const [zoneEdit, setZoneEdit] = useState(null); // zona që po ndryshohet
   const [plotId, setPlotId] = useState(null);    // kartela e parcelës e hapur
+  const [importEnt, setImportEnt] = useState(null); // lloji i të dhënave për importim
   const [err, setErr] = useState("");
 
   const loadMembers = async (sess) => {
@@ -129,7 +132,8 @@ export default function App() {
   ];
   const PRIMARY = ["pasqyra", "parcelat", "gjurmimi", "modulet", "raporte"];
   const done = () => setForm(null);
-  const go = (k) => { setForm(null); setPlotId(null); setTab(k); };
+  const go = (k) => { setForm(null); setPlotId(null); setImportEnt(null); setTab(k); };
+  const goImport = (ent) => { setForm(null); setPlotId(null); setImportEnt(ent); setTab("importo"); };
 
   let body;
   if (form === "blerje") body = <PurchaseForm cid={cid} onDone={done} />;
@@ -164,6 +168,8 @@ export default function App() {
   else if (tab === "blerje") body = <Purchases key={cid} cid={cid} role={role} onNew={() => setForm("blerje")} />;
   else if (tab === "magazine") body = <Stock key={cid} cid={cid} role={role} onNew={() => setForm("magazine")} />;
   else if (tab === "mostra") body = <Samples key={cid} cid={cid} role={role} onNew={() => setForm("mostra")} />;
+  else if (tab === "importo") body = <Import key={cid} cid={cid} preset={importEnt} onGo={go} />;
+  else if (tab === "fillimi") body = <Start key={cid} cid={cid} role={role} onGo={go} onForm={(k) => setForm(k)} onImport={goImport} />;
   else if (tab === "raporte") body = <Reports cid={cid} />;
   else body = <Users cid={cid} me={session.user.id} />;
 

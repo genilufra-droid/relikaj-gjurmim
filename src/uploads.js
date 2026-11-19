@@ -63,3 +63,22 @@ export const humanSize = (b) => {
   if (n < 1024 * 1024) return `${Math.round(n / 1024)} KB`;
   return `${(n / 1024 / 1024).toFixed(1)} MB`;
 };
+
+// Skedar tabele (Excel / CSV) për importim
+export async function pickSpreadsheet() {
+  const res = await DocumentPicker.getDocumentAsync({
+    type: [
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/vnd.ms-excel",
+      "text/csv",
+      "text/comma-separated-values",
+      "text/plain",
+      "application/octet-stream",
+      "*/*",
+    ],
+    copyToCacheDirectory: true,
+  });
+  if (res.canceled || !res.assets?.length) return null;
+  const a = res.assets[0];
+  return { uri: a.uri, mime: a.mimeType || "application/octet-stream", name: a.name || "tabela.xlsx", size: a.size || 0 };
+}
