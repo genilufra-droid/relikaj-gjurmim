@@ -4,7 +4,17 @@
     "slug": "relikaj-gjurmim",
     "version": "0.1.0",
     "orientation": "portrait",
-    "ios": { "bundleIdentifier": "al.relikaj.gjurmim", "supportsTablet": true },
-    "android": { "package": "al.relikaj.gjurmim" }
+    "ios": {
+      "bundleIdentifier": "al.relikaj.gjurmim",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "al.relikaj.gjurmim",
+      "backgroundColor": "#2f6b3a"
+    },
+    "splash": {
+      "backgroundColor": "#2f6b3a",
+      "resizeMode": "contain"
+    }
   }
 }
