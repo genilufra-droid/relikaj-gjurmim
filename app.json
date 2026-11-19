@@ -1,0 +1,10 @@
+{
+  "expo": {
+    "name": "Gjurmim relikaj.al",
+    "slug": "relikaj-gjurmim",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "ios": { "bundleIdentifier": "al.relikaj.gjurmim", "supportsTablet": true },
+    "android": { "package": "al.relikaj.gjurmim" }
+  }
+}
