@@ -43,9 +43,12 @@ jobs:
       - name: Ndërtimi i APK-së (release)
         run: |
           set -o pipefail
+          export GRADLE_OPTS="-Xmx4g -Dorg.gradle.daemon=false"
           cd android
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon --stacktrace 2>&1 | tee /tmp/gradle.log
+          # një ripërpjekje automatike: ndërtimi i parë ndonjëherë dështon për arsye rrjeti/memorie
+          ./gradlew assembleRelease --no-daemon --stacktrace 2>&1 | tee /tmp/gradle.log \
+            || (echo "== Ripërpjekje ==" && ./gradlew assembleRelease --no-daemon --stacktrace 2>&1 | tee -a /tmp/gradle.log)
 
       # Kur dështon, logu i Gradle publikohet te PR që të lexohet lehtë (logjet e Actions s'mundohen gjithmonë)
       - name: Publiko logun e dështimit
