@@ -73,17 +73,20 @@ export default function App() {
   else body = <Users cid={cid} me={session.user.id} />;
 
   return (
-    <SafeAreaView style={s.screen}>
-      <StatusBar barStyle="dark-content" />
-      <View style={[s.row, { padding: 10, paddingHorizontal: 16 }]}>
-        <Text style={{ color: C.text, fontWeight: "700" }}>{cur.companies?.name}</Text>
-        {mem.length > 1 && <TouchableOpacity onPress={() => { setCur(null); setForm(null); }}><Text style={{ color: C.green }}>Ndrysho</Text></TouchableOpacity>}
+    <SafeAreaView style={[s.screen, { backgroundColor: C.green }]}>
+      <StatusBar barStyle="light-content" backgroundColor={C.green} />
+      <View style={[s.header, s.row]}>
+        <View>
+          <Text style={s.headerS}>BIOBES FARM</Text>
+          <Text style={s.headerT}>{cur.companies?.name}</Text>
+        </View>
+        {mem.length > 1 && <TouchableOpacity onPress={() => { setCur(null); setForm(null); }}><Text style={{ color: "#fff", fontWeight: "600" }}>Ndrysho</Text></TouchableOpacity>}
       </View>
-      <View style={{ flex: 1 }}>{body}</View>
+      <View style={{ flex: 1, backgroundColor: C.bg }}>{body}</View>
       <View style={s.tabs}>
         {tabs.map(([k, t]) => (
-          <TouchableOpacity key={k} style={s.tab} onPress={() => (k === "dil" ? sb.auth.signOut() : (setForm(null), setTab(k)))}>
-            <Text style={{ color: tab === k && !form ? C.green : C.mute, fontWeight: tab === k ? "700" : "400", fontSize: 12 }}>{t}</Text>
+          <TouchableOpacity key={k} style={[s.tab, tab === k && !form && k !== "dil" && s.tabOn]} onPress={() => (k === "dil" ? sb.auth.signOut() : (setForm(null), setTab(k)))}>
+            <Text style={{ color: tab === k && !form ? C.green : C.mute, fontWeight: tab === k ? "700" : "400", fontSize: 12, letterSpacing: 0.3 }}>{t}</Text>
           </TouchableOpacity>
         ))}
       </View>

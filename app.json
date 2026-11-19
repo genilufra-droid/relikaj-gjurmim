@@ -10,10 +10,10 @@
     },
     "android": {
       "package": "al.relikaj.gjurmim",
-      "backgroundColor": "#2f6b3a"
+      "backgroundColor": "#1f4d2e"
     },
     "splash": {
-      "backgroundColor": "#2f6b3a",
+      "backgroundColor": "#1f4d2e",
       "resizeMode": "contain"
     }
   }
