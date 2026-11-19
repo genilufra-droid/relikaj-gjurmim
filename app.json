@@ -2,7 +2,7 @@
   "expo": {
     "name": "BioBes Farm",
     "slug": "relikaj-gjurmim",
-    "version": "0.3.1",
+    "version": "0.4.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "assetBundlePatterns": [
@@ -19,7 +19,7 @@
     },
     "android": {
       "package": "al.relikaj.gjurmim",
-      "versionCode": 6,
+      "versionCode": 7,
       "backgroundColor": "#14532D",
       "permissions": [
         "ACCESS_COARSE_LOCATION",

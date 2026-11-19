@@ -102,7 +102,7 @@ export function PlotForm({ cid, onDone }) {
   );
 }
 
-export default function Plots({ cid, role, onNew }) {
+export default function Plots({ cid, role, onNew, onOpen }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
@@ -178,7 +178,7 @@ export default function Plots({ cid, role, onNew }) {
         renderItem={({ item: r }) => {
           const costPerHa = r.area_ha > 0 ? Number(r.inputs_cost) / Number(r.area_ha) : 0;
           return (
-            <Card onLongPress={() => canDelete && del(r)} style={{ marginTop: 2 }}>
+            <Card onPress={() => onOpen && onOpen(r.plot_id)} onLongPress={() => canDelete && del(r)} style={{ marginTop: 2 }}>
               <View style={s.listRow}>
                 <View style={[s.iconCircle, { backgroundColor: C.brandSoft }]}>
                   <Ionicons name={r.growing === "greenhouse" ? "home-outline" : "leaf-outline"} size={19} color={C.brand} />

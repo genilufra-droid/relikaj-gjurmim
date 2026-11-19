@@ -65,8 +65,17 @@ export default function Dashboard({ cid, role, onGo }) {
       contentContainerStyle={s.pad}
       refreshControl={<RefreshControl refreshing={loading && !!st} onRefresh={load} tintColor={C.brand} />}
     >
-      <Text style={[s.mute, { marginBottom: 2 }]}>{todayStr}</Text>
-      <Text style={s.h1}>Pasqyra e fermës</Text>
+      <View style={[s.pageTitle, { marginBottom: 2 }]}>
+        <View style={{ flex: 1 }}>
+          <Text style={[s.mute, { marginBottom: 2 }]}>{todayStr}</Text>
+          <Text style={s.h1}>Pasqyra e fermës</Text>
+        </View>
+        <TouchableOpacity onPress={() => onGo("kujtuesit")} activeOpacity={0.85}
+          style={{ flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: C.dangerSoft, paddingHorizontal: 11, paddingVertical: 8, borderRadius: 999 }}>
+          <Ionicons name="alarm-outline" size={15} color={C.red} />
+          <Text style={{ color: C.red, fontWeight: "800", fontSize: 12.5 }}>Kujtuesit</Text>
+        </TouchableOpacity>
+      </View>
 
       {!!err && <ErrorBox message={"Statistikat nuk u ngarkuan: " + err} onRetry={load} />}
       {loading && !st && <Loading text="Po mblidhen të dhënat…" />}

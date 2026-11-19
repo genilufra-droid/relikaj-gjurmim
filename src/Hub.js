@@ -25,6 +25,7 @@ const GROUPS = [
   {
     title: "Grumbullimi",
     items: [
+      ["kujtuesit", "Kujtuesit", "Çka pret veprim sot", "alarm-outline"],
       ["blerje", "Blerjet", "Marrja nga fermerët", "basket-outline"],
       ["mostra", "Mostrat", "Në parcelë ose qendër", "flask-outline"],
       ["zonat", "Zonat", "Grumbulluesit e zonave", "people-outline"],

@@ -23,6 +23,8 @@ import Trace from "./src/Trace";
 import Operations, { OperationForm, ApplicationForm } from "./src/Operations";
 import Processing, { BatchForm } from "./src/Processing";
 import Zones, { ZoneForm } from "./src/Zones";
+import PlotDetail from "./src/PlotDetail";
+import Reminders from "./src/Reminders";
 
 const ROLE = { admin: "Administrator", staf: "Staf", grumbullues: "Grumbullues", fermer: "Fermer" };
 
@@ -35,6 +37,7 @@ export default function App() {
   const [land, setLand] = useState("qira");      // nënndarja e «Toka»
   const [work, setWork] = useState("punime");    // nënndarja e «Puna në tokë»
   const [zoneEdit, setZoneEdit] = useState(null); // zona që po ndryshohet
+  const [plotId, setPlotId] = useState(null);    // kartela e parcelës e hapur
   const [err, setErr] = useState("");
 
   const loadMembers = async (sess) => {
@@ -126,7 +129,7 @@ export default function App() {
   ];
   const PRIMARY = ["pasqyra", "parcelat", "gjurmimi", "modulet", "raporte"];
   const done = () => setForm(null);
-  const go = (k) => { setForm(null); setTab(k); };
+  const go = (k) => { setForm(null); setPlotId(null); setTab(k); };
 
   let body;
   if (form === "blerje") body = <PurchaseForm cid={cid} onDone={done} />;
@@ -143,10 +146,12 @@ export default function App() {
   else if (form === "trajtim") body = <ApplicationForm cid={cid} onDone={done} />;
   else if (form === "batch") body = <BatchForm cid={cid} onDone={done} />;
   else if (form === "zone") body = <ZoneForm cid={cid} zone={zoneEdit} onDone={() => { setZoneEdit(null); done(); }} />;
+  else if (plotId) body = <PlotDetail cid={cid} plotId={plotId} onGo={go} onBack={() => setPlotId(null)} />;
+  else if (tab === "kujtuesit") body = <Reminders key={cid} cid={cid} onGo={go} />;
   else if (tab === "modulet") body = <Hub role={role} onGo={go} />;
   else if (tab === "gjurmimi") body = <Trace key={cid} cid={cid} />;
   else if (tab === "pasqyra") body = <Dashboard key={cid} cid={cid} role={role} onGo={go} />;
-  else if (tab === "parcelat") body = <Plots key={cid} cid={cid} role={role} onNew={() => setForm("parcela")} onOpen={go} />;
+  else if (tab === "parcelat") body = <Plots key={cid} cid={cid} role={role} onNew={() => setForm("parcela")} onOpen={(id) => setPlotId(id)} />;
   else if (tab === "kultivimet") body = <Cultivations key={cid} cid={cid} role={role} onNew={() => setForm("kultivim")} />;
   else if (tab === "detyra") body = <Tasks key={cid} cid={cid} role={role} onNew={() => setForm("detyre")} />;
   else if (tab === "vezhgime") body = <Observations key={cid} cid={cid} role={role} onNew={() => setForm("vezhgim")} />;
@@ -191,7 +196,16 @@ export default function App() {
         </View>
       </View>
 
-      {!form && !PRIMARY.includes(tab) && (
+      {!form && plotId && (
+        <View style={{ backgroundColor: C.bg, paddingHorizontal: 16, paddingTop: 8 }}>
+          <TouchableOpacity style={s.backRow} onPress={() => setPlotId(null)} hitSlop={8}>
+            <Ionicons name="chevron-back" size={18} color={C.brand} />
+            <Text style={s.backT}>Parcelat</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {!form && !plotId && !PRIMARY.includes(tab) && (
         <View style={{ backgroundColor: C.bg, paddingHorizontal: 16, paddingTop: 8 }}>
           <TouchableOpacity style={s.backRow} onPress={() => go("modulet")} hitSlop={8}>
             <Ionicons name="chevron-back" size={18} color={C.brand} />
