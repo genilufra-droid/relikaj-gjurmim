@@ -66,5 +66,5 @@ export const LOOKUPS = {
   customer: { table: "customers", search: ["name"], label: (r) => r.name + (r.country ? ` (${r.country})` : ""), create: (t) => ({ name: t }) },
   farmer: { table: "farmers", search: ["first_name", "last_name"], label: (r) => `${r.first_name} ${r.last_name}`.trim(), create: splitName },
   zone: { table: "zones", search: ["code"], label: (r) => r.code + (r.fair_wild ? " (Fair Wild)" : ""), create: (t) => ({ code: t, fair_wild: /F\b/i.test(t) }) },
-  product: { table: "products", search: ["name", "code"], label: (r) => `${r.code ? r.code + " · " : ""}${r.name}`, create: (t) => (/^\d+$/.test(t) ? { code: t, name: t } : { name: t }) },
+  product: { table: "products", search: ["name", "code"], label: (r) => `${r.code ? r.code + " · " : ""}${r.name}`, create: (t) => { const m = /^(\d+)\s+(.+)$/.exec(t); return m ? { code: m[1], name: m[2] } : { name: t }; } },
 };

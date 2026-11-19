@@ -11,8 +11,10 @@ export function PurchaseForm({ cid, onDone }) {
   const [f, setF] = useState({ date: today(), farmer: null, zone: null, product: null, cut: "I", fresh: "", dry: "", price: "", paid: "", note: "" });
   const [err, setErr] = useState(""), [busy, setBusy] = useState(false);
   const set = (k) => (v) => setF((o) => ({ ...o, [k]: v }));
+  const [pcode, setPcode] = useState(null);
   const save = async () => {
     if (!f.farmer || !f.zone || !f.product) { setErr("Zgjidhni fermerin, zonën dhe produktin"); return; }
+    if (!pcode) { setErr("Produkti duhet të ketë kod (p.sh. shkruani «115 Mjedër» kur e shtoni)"); return; }
     setBusy(true); setErr("");
     const { error } = await sb.from("purchases").insert({
       company_id: cid, date: f.date, farmer_id: f.farmer, zone_id: f.zone, product_id: f.product, cut: f.cut,
@@ -28,7 +30,7 @@ export function PurchaseForm({ cid, onDone }) {
       <Field label="Data (VVVV-MM-DD)" value={f.date} onChangeText={set("date")} />
       <Lookup title="Fermeri" cid={cid} cfg={LOOKUPS.farmer} value={f.farmer} onChange={set("farmer")} />
       <Lookup title="Zona" cid={cid} cfg={LOOKUPS.zone} value={f.zone} onChange={set("zone")} />
-      <Lookup title="Produkti" cid={cid} cfg={LOOKUPS.product} value={f.product} onChange={set("product")} />
+      <Lookup title="Produkti" cid={cid} cfg={LOOKUPS.product} value={f.product} onChange={(id, row) => { set("product")(id); setPcode(row?.code || ""); }} />
       <Text style={s.label}>Korrja</Text>
       <View style={{ flexDirection: "row", gap: 8 }}>
         {CUTS.map((c) => (
