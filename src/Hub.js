@@ -2,7 +2,13 @@
 import React from "react";
 import { ScrollView, Text, View, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { s, C, SectionTitle } from "./ui";
+import { s, C, Card, SectionTitle } from "./ui";
+
+const pairUp = (list) => {
+  const rows = [];
+  for (let i = 0; i < list.length; i += 2) rows.push(list.slice(i, i + 2));
+  return rows;
+};
 
 const GROUPS = [
   {
@@ -60,24 +66,20 @@ export default function Hub({ role, onGo }) {
       {groups.map((g) => (
         <View key={g.title}>
           <SectionTitle>{g.title}</SectionTitle>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-            {g.items.map(([k, title, desc, icon]) => (
-              <TouchableOpacity
-                key={k}
-                onPress={() => onGo(k)}
-                activeOpacity={0.85}
-                style={[s.card, { width: "47.5%", flexGrow: 1, minHeight: 104, justifyContent: "space-between" }]}
-              >
-                <View style={[s.iconCircle, { backgroundColor: C.brandSoft }]}>
-                  <Ionicons name={icon} size={18} color={C.brand} />
-                </View>
-                <View>
-                  <Text style={{ fontWeight: "800", color: C.ink, fontSize: 14.5, marginTop: 8 }} numberOfLines={1}>{title}</Text>
-                  <Text style={s.mute} numberOfLines={2}>{desc}</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
+          {pairUp(g.items).map((pair, ri) => (
+            <View key={ri} style={{ flexDirection: "row", marginBottom: 10 }}>
+              {pair.map(([k, title, desc, icon], ci) => (
+                <Card key={k} onPress={() => onGo(k)} style={{ flex: 1, marginBottom: 0, marginRight: ci === 0 && pair.length > 1 ? 10 : 0 }}>
+                  <View style={[s.iconCircle, { backgroundColor: C.brandSoft }]}>
+                    <Ionicons name={icon} size={18} color={C.brand} />
+                  </View>
+                  <Text style={{ fontWeight: "800", color: C.ink, fontSize: 14.5, marginTop: 9 }} numberOfLines={1}>{title}</Text>
+                  <Text style={[s.mute, { marginTop: 2 }]} numberOfLines={2}>{desc}</Text>
+                </Card>
+              ))}
+              {pair.length === 1 && <View style={{ flex: 1 }} />}
+            </View>
+          ))}
         </View>
       ))}
       <Text style={[s.mute, { marginTop: 22, textAlign: "center" }]}>BioBes Farm · gjurmueshmëri nga toka te klienti</Text>

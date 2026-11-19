@@ -4,7 +4,7 @@ import { Alert, FlatList, ScrollView, Text, View, TouchableOpacity } from "react
 import { Ionicons } from "@expo/vector-icons";
 import { sb } from "./supabase";
 import Lookup, { LOOKUPS } from "./Lookup";
-import { s, C, Btn, Field, Card, Chip, Empty, ErrorBox, Loading, SearchBar, Segmented, FAB, fmt, num, dShort, dueLabel } from "./ui";
+import { s, C, Btn, Field, Card, Chip, Empty, ErrorBox, Loading, SearchBar, Segmented, FAB, fmt, num, dShort, dueLabel, ChipRow } from "./ui";
 
 const STAGES = [["planned", "E planifikuar", C.info], ["growing", "Në rritje", C.ok], ["harvest", "Vjelje", C.warn], ["done", "Mbaruar", C.mute]];
 
@@ -138,12 +138,12 @@ export default function Cultivations({ cid, role, onNew }) {
                 <View style={{ height: 6, width: `${prog * 100}%`, backgroundColor: st[2], borderRadius: 99 }} />
               </View>
 
-              <View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
+              <ChipRow style={{ marginTop: 10 }}>
                 {!!r.sowing_date && <Chip label={`Mbjellë ${dShort(r.sowing_date)}`} icon="calendar-outline" />}
                 {!!r.expected_harvest && <Chip label={`Vjelje ${dShort(r.expected_harvest)}`} icon="basket-outline" tone="info" />}
                 {!!Number(r.expected_yield_kg) && <Chip label={`${fmt(r.expected_yield_kg)} kg`} icon="scale-outline" tone="ok" />}
                 {!!r.expected_harvest && r.stage !== "done" && <Chip label={dueLabel(r.expected_harvest)} tone={dueLabel(r.expected_harvest).includes("vonë") ? "danger" : "neutral"} />}
-              </View>
+              </ChipRow>
             </Card>
           );
         }}

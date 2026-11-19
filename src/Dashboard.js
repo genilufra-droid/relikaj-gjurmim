@@ -3,9 +3,16 @@ import React, { useCallback, useEffect, useState } from "react";
 import { RefreshControl, ScrollView, Text, View, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { sb } from "./supabase";
-import { s, C, Card, Chip, ErrorBox, Loading, SectionTitle, Stat, fmt, money, dShort, dueLabel } from "./ui";
+import { s, C, Card, Chip, ErrorBox, Kpis, Loading, SectionTitle, Stat, fmt, money, dShort, dueLabel } from "./ui";
 
 const WDAY = ["Die", "Hën", "Mar", "Mër", "Enj", "Pre", "Sht"];
+const hero = {
+  wrap: { flexDirection: "row", backgroundColor: C.brandDark, borderRadius: 18, paddingVertical: 15, paddingHorizontal: 6, marginTop: 14 },
+  cell: { flex: 1, paddingHorizontal: 12 },
+  cellLine: { borderLeftWidth: 1, borderLeftColor: "rgba(255,255,255,0.16)" },
+  label: { color: "#A9CF97", fontSize: 10, letterSpacing: 1.1, fontWeight: "700" },
+  value: { color: "#fff", fontSize: 19, fontWeight: "800", marginTop: 4 },
+};
 const KIND_LABEL = { pest: "Dëmtues", disease: "Sëmundje", weed: "Barëra", stress: "Stres", damage: "Dëmtim", other: "Tjetër" };
 const wxIcon = (rain, tmax) => (rain >= 5 ? "rainy" : rain >= 0.5 ? "rainy-outline" : tmax >= 30 ? "sunny" : "partly-sunny");
 
@@ -65,14 +72,27 @@ export default function Dashboard({ cid, role, onGo }) {
       {loading && !st && <Loading text="Po mblidhen të dhënat…" />}
 
       {st && (
-        <View style={[s.kpiGrid, { marginTop: 14 }]}>
-          <Stat icon="map-outline" label="Sipërfaqe" value={`${fmt(st.area_ha)} ha`} sub={`${st.plots} parcela`} onPress={() => onGo("parcelat")} />
-          <Stat icon="leaf-outline" label="Kultivime aktive" value={st.cultivations_active} sub="në rritje / vjelje" tone="ok" onPress={() => onGo("kultivimet")} />
+        <View style={hero.wrap}>
+          {[
+            ["Sipërfaqe", `${fmt(st.area_ha)} ha`],
+            ["Parcela", String(st.plots ?? 0)],
+            ["Kultivime", String(st.cultivations_active ?? 0)],
+          ].map(([l, v], i) => (
+            <View key={l} style={[hero.cell, i > 0 && hero.cellLine]}>
+              <Text style={hero.label}>{l.toUpperCase()}</Text>
+              <Text style={hero.value} numberOfLines={1}>{v}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {st && (
+        <Kpis style={{ marginTop: 12 }}>
           <Stat icon="checkbox-outline" label="Detyra të hapura" value={st.tasks_open} sub={st.tasks_overdue ? `${st.tasks_overdue} të vonuara` : "asnjë e vonuar"} tone={st.tasks_overdue ? "danger" : "brand"} onPress={() => onGo("detyra")} />
           <Stat icon="bug-outline" label="Vëzhgime" value={st.observations_open} sub="të pazgjidhura" tone={st.observations_open ? "warn" : "brand"} onPress={() => onGo("vezhgime")} />
           <Stat icon="nutrition-outline" label="Inpute këtë vit" value={money(st.inputs_year)} sub="plehra, trajtime, punë" tone="info" onPress={() => onGo("inpute")} />
-          <Stat icon="basket-outline" label="Blerje këtë vit" value={money(st.purchases_year)} sub="nga fermerët" onPress={() => onGo("blerje")} />
-        </View>
+          <Stat icon="basket-outline" label="Blerje këtë vit" value={money(st.purchases_year)} sub="nga fermerët" tone="ok" onPress={() => onGo("blerje")} />
+        </Kpis>
       )}
 
       {alerts.length > 0 && <SectionTitle>Alarme</SectionTitle>}
@@ -95,10 +115,10 @@ export default function Dashboard({ cid, role, onGo }) {
           <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
             {wx.time.map((d, i) => (
               <View key={d} style={{ alignItems: "center", flex: 1 }}>
-                <Text style={[s.mute, { fontSize: 11 }]}>{i === 0 ? "Sot" : WDAY[new Date(d + "T00:00:00Z").getUTCDay()]}</Text>
-                <Ionicons name={wxIcon(wx.precipitation_sum[i], wx.temperature_2m_max[i])} size={22} color={C.brand} style={{ marginVertical: 5 }} />
-                <Text style={{ fontWeight: "800", color: C.ink, fontSize: 14 }}>{Math.round(wx.temperature_2m_max[i])}°</Text>
-                <Text style={[s.mute, { fontSize: 11 }]}>{Math.round(wx.temperature_2m_min[i])}° · {Math.round(wx.precipitation_sum[i])} mm</Text>
+                <Text style={[s.mute, { fontSize: 11 }]} numberOfLines={1}>{i === 0 ? "Sot" : WDAY[new Date(d + "T00:00:00Z").getUTCDay()]}</Text>
+                <Ionicons name={wxIcon(wx.precipitation_sum[i], wx.temperature_2m_max[i])} size={20} color={C.brand} style={{ marginVertical: 4 }} />
+                <Text style={{ fontWeight: "800", color: C.ink, fontSize: 14 }} numberOfLines={1}>{Math.round(wx.temperature_2m_max[i])}°</Text>
+                <Text style={[s.mute, { fontSize: 10.5 }]} numberOfLines={1}>{Math.round(wx.temperature_2m_min[i])}° · {Math.round(wx.precipitation_sum[i])} mm</Text>
               </View>
             ))}
           </View>

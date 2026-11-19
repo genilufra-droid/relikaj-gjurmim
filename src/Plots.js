@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import { sb } from "./supabase";
 import Lookup, { LOOKUPS } from "./Lookup";
-import { s, C, Btn, Field, Card, Chip, Empty, ErrorBox, Loading, SearchBar, Segmented, Stat, FAB, money, fmt, num } from "./ui";
+import { s, C, Btn, Field, Card, Chip, Empty, ErrorBox, Loading, SearchBar, Segmented, Stat, FAB, money, fmt, num, Kpis } from "./ui";
 
 const GROWING = [["field", "Fushë e hapur", "leaf-outline"], ["greenhouse", "Serë", "home-outline"]];
 const IRRIG = [["none", "Pa ujitje"], ["drip", "Pika-pika"], ["sprinkler", "Spërkatje"], ["furrow", "Brazda"]];
@@ -150,10 +150,10 @@ export default function Plots({ cid, role, onNew }) {
             </View>
 
             {rows.length > 0 && (
-              <View style={[s.kpiGrid, { marginTop: 12 }]}>
+              <Kpis style={{ marginTop: 12 }}>
                 <Stat icon="resize-outline" label="Sipërfaqe totale" value={`${fmt(totalHa)} ha`} sub={`${rows.length} parcela`} />
                 <Stat icon="leaf-outline" label="Kultivime" value={rows.reduce((a, r) => a + Number(r.cultivations || 0), 0)} sub="aktive" tone="ok" />
-              </View>
+              </Kpis>
             )}
 
             <SearchBar value={q} onChange={setQ} placeholder="Kërko parcelë ose fermer…" />
@@ -201,12 +201,12 @@ export default function Plots({ cid, role, onNew }) {
                 )}
               </View>
 
-              <View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
+              <ChipRow style={{ marginTop: 10 }}>
                 <Chip label={`${r.cultivations} kultivime`} icon="leaf-outline" />
                 <Chip label={`${r.tasks_open} detyra`} icon="checkbox-outline" tone={r.tasks_open ? "warn" : "neutral"} />
                 <Chip label={`${r.observations_open} vëzhgime`} icon="bug-outline" tone={r.observations_open ? "warn" : "neutral"} />
                 {Number(r.inputs_cost) > 0 && <Chip label={`${money(r.inputs_cost)}${costPerHa ? ` · ${money(costPerHa)}/ha` : ""}`} icon="cash-outline" tone="info" />}
-              </View>
+              </ChipRow>
             </Card>
           );
         }}

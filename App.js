@@ -123,7 +123,6 @@ export default function App() {
     ["gjurmimi", "Gjurmimi", "git-branch-outline"],
     ["modulet", "Modulet", "grid-outline"],
     ["raporte", "Raporte", "bar-chart-outline"],
-    ["dil", "Dil", "log-out-outline"],
   ];
   const PRIMARY = ["pasqyra", "parcelat", "gjurmimi", "modulet", "raporte"];
   const done = () => setForm(null);
@@ -185,6 +184,9 @@ export default function App() {
                 <Ionicons name="swap-horizontal" size={20} color="#fff" />
               </TouchableOpacity>
             )}
+            <TouchableOpacity onPress={() => sb.auth.signOut()} hitSlop={10} accessibilityLabel="Dil">
+              <Ionicons name="log-out-outline" size={20} color="#fff" />
+            </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -209,17 +211,19 @@ export default function App() {
 
       <View style={{ flex: 1, backgroundColor: C.bg }}>{body}</View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.tabs} contentContainerStyle={{ paddingHorizontal: 4 }}>
-        {TABS.map(([k, t, icon]) => {
-          const on = (tab === k || (k === "modulet" && !PRIMARY.includes(tab) && k !== "dil")) && !form && k !== "dil";
+      <View style={s.tabs}>
+        {TABS.map(([k, title, icon]) => {
+          const on = k !== "dil" && (tab === k || (k === "modulet" && !PRIMARY.includes(tab)));
           return (
             <TouchableOpacity key={k} style={[s.tab, on && s.tabOn]} onPress={() => (k === "dil" ? sb.auth.signOut() : go(k))} activeOpacity={0.8}>
-              <Ionicons name={icon} size={20} color={on ? C.brand : C.mute} />
-              <Text style={[s.tabT, on && s.tabTOn]}>{t}</Text>
+              <View style={s.tabIc}>
+                <Ionicons name={icon} size={21} color={on ? C.brand : C.mute} />
+              </View>
+              <Text style={[s.tabT, on && s.tabTOn]} numberOfLines={1}>{title}</Text>
             </TouchableOpacity>
           );
         })}
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }

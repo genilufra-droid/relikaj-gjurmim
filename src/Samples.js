@@ -4,7 +4,7 @@ import { FlatList, ScrollView, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { sb } from "./supabase";
 import Lookup, { LOOKUPS } from "./Lookup";
-import { s, C, Field, Btn, Card, Chip, Empty, ErrorBox, Loading, SearchBar, Segmented, Stat, fmt, today, dFull } from "./ui";
+import { s, C, Field, Btn, Card, Chip, Empty, ErrorBox, Loading, SearchBar, Segmented, Stat, fmt, today, dFull, Kpis } from "./ui";
 
 const POINTS = [["plot", "Në parcelë"], ["center", "Në qendër"], ["warehouse", "Në magazinë"]];
 const POINT = Object.fromEntries(POINTS);
@@ -91,10 +91,10 @@ export default function Samples({ cid, onNew, role }) {
         <View>
           <Text style={s.h1}>Mostrat</Text>
           <Text style={[s.sub, { marginTop: 2 }]}>Marrje në parcelë ose qendër, me laborator dhe vendim.</Text>
-          <View style={[s.kpiGrid, { marginTop: 12 }]}>
+          <Kpis style={{ marginTop: 12 }}>
             <Stat icon="checkmark-done-outline" label="Kaluar" value={`${passed}`} sub={`nga ${rows.length} mostra`} tone="ok" />
             <Stat icon="close-circle-outline" label="Refuzuar" value={`${failed}`} sub="kërkojnë veprim" tone={failed ? "danger" : "info"} />
-          </View>
+          </Kpis>
           <SearchBar value={q} onChange={setQ} placeholder="Kod loti, produkt ose laborator…" />
           {!!err && <ErrorBox message={err} onRetry={load} />}
           {canWrite && <Btn title="+ Mostër e re" icon="add" onPress={onNew} />}
@@ -116,13 +116,13 @@ export default function Samples({ cid, onNew, role }) {
             </View>
             <Chip label={r.passed === true ? "Kaluar" : r.passed === false ? "Refuzuar" : "Në pritje"} tone={r.passed === true ? "ok" : r.passed === false ? "danger" : "warn"} />
           </View>
-          <View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+          <ChipRow style={{ marginTop: 8 }}>
             {!!r.code && <Chip label={r.code} icon="barcode-outline" />}
             {!!r.plots && <Chip label={r.plots.code || r.plots.name} icon="map-outline" />}
             {r.moisture != null && <Chip label={`Lagështi ${fmt(r.moisture)}%`} tone="info" />}
             {r.purity != null && <Chip label={`Pastërti ${fmt(r.purity)}%`} tone="info" />}
             {!!r.customers?.name && <Chip label={r.customers.name} />}
-          </View>
+          </ChipRow>
           {!!r.result && <Text style={[s.mute, { marginTop: 6 }]} numberOfLines={3}>Rezultat: {r.result}</Text>}
         </Card>
       )}

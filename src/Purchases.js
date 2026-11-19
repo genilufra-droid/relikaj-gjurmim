@@ -4,7 +4,7 @@ import { Alert, FlatList, ScrollView, Text, View, TouchableOpacity } from "react
 import { Ionicons } from "@expo/vector-icons";
 import { sb } from "./supabase";
 import Lookup, { LOOKUPS } from "./Lookup";
-import { s, C, Field, Btn, Card, Chip, Empty, ErrorBox, Loading, SearchBar, Segmented, Stat, fmt, money, num, today, dFull } from "./ui";
+import { s, C, Field, Btn, Card, Chip, Empty, ErrorBox, Loading, SearchBar, Segmented, Stat, fmt, money, num, today, dFull, Kpis } from "./ui";
 
 const CUTS = ["I", "II", "III"];
 
@@ -89,10 +89,10 @@ export default function Purchases({ cid, role, onNew }) {
         <View>
           <Text style={s.h1}>Blerjet</Text>
           <Text style={[s.sub, { marginTop: 2 }]}>Marrjet nga fermerët, me parcelë dhe grumbullues.</Text>
-          <View style={[s.kpiGrid, { marginTop: 12 }]}>
+          <Kpis style={{ marginTop: 12 }}>
             <Stat icon="scale-outline" label="Sasi e thatë" value={`${fmt(kg)} kg`} sub={`${rows.length} blerje`} />
             <Stat icon="cash-outline" label="Vlera" value={money(val)} sub={`paguar ${money(rows.reduce((a, r) => a + Number(r.paid || 0), 0))}`} tone="ok" />
-          </View>
+          </Kpis>
           <SearchBar value={q} onChange={setQ} placeholder="Lot, fermer, produkt ose grumbullues…" />
           {!!err && <ErrorBox message={err} onRetry={load} />}
           {canWrite && <Btn title="+ Blerje e re" icon="add" onPress={onNew} />}
@@ -117,11 +117,11 @@ export default function Purchases({ cid, role, onNew }) {
               <Text style={s.mute}>{dFull(r.date).slice(0, 5)}</Text>
             </View>
           </View>
-          <View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+          <ChipRow style={{ marginTop: 8 }}>
             {!!r.plots && <Chip label={r.plots.code || r.plots.name} icon="map-outline" />}
             {!!r.zones?.collector_name && <Chip label={r.zones.collector_name} icon="people-outline" tone="info" />}
             <Chip label={money(r.amount)} tone="ok" />
-          </View>
+          </ChipRow>
         </Card>
       )}
     />

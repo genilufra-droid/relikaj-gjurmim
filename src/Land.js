@@ -4,7 +4,7 @@ import { Alert, ScrollView, Text, View, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { sb } from "./supabase";
 import Lookup, { LOOKUPS } from "./Lookup";
-import { s, C, Btn, Field, Card, Chip, Empty, ErrorBox, Loading, Segmented, Stat, money, num, fmt, today, dShort, dueLabel } from "./ui";
+import { s, C, Btn, Field, Card, Chip, Empty, ErrorBox, Loading, Segmented, Stat, money, num, fmt, today, dShort, dueLabel, Kpis } from "./ui";
 
 export function LandForm({ cid, mode, onDone }) {
   const [f, setF] = useState({ plot: null, owner: "", start: "", end: "", rent: "", term: "", deposit: "", date: today(), amount: "", method: "", payer: "company", receipt: "", farmer: null, title: "", note: "" });
@@ -125,10 +125,10 @@ export default function Land({ cid, role, part, onPart, onNew }) {
       <Text style={s.h1}>Toka dhe financat</Text>
       <Text style={[s.sub, { marginTop: 2 }]}>Qiratë, pagesat dhe kujtuesit e fermës.</Text>
 
-      <View style={[s.kpiGrid, { marginTop: 12 }]}>
+      <Kpis style={{ marginTop: 12 }}>
         <Stat icon="home-outline" label="Qira vjetore" value={money(rentTotal)} sub={`${leases.length} kontrata`} />
         <Stat icon="checkmark-done-outline" label="Paguar" value={money(paidTotal)} sub={`mbetur ${money(rentTotal - paidTotal)}`} tone={rentTotal - paidTotal > 0 ? "warn" : "ok"} />
-      </View>
+      </Kpis>
 
       <View style={{ marginTop: 14 }}>
         <Segmented options={[["qira", "Qiratë"], ["pagesa", "Pagesat"], ["kujtues", `Kujtuesit${dueRem ? ` (${dueRem})` : ""}`]]} value={part} onChange={onPart} />
