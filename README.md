@@ -8,6 +8,11 @@ Aplikacion i vërtetë mobil (Android + iPhone, Expo / React Native) me Supabase
 - `supabase/functions/admin-users` — krijim përdoruesish nga admini.
 - `app/` — aplikacioni Expo (hyrje, zgjedhje kompanie, blerje, magazinë, raporte, përdorues; fusha kërkimi me «+ Shto»).
 
+## APK për telefon (Android)
+Ekzekutoni workflow-in **«Ndërto APK»** te GitHub → Actions (ose thjesht bëni push: ndërtohet vetë). APK-ja shkarkohet nga:
+`https://github.com/genilufra-droid/relikaj-gjurmim/releases/download/apk-latest/BioBes-Farm.apk`
+Ndërtimi zgjat ~12–18 min. Instalimi në telefon: hapeni lidhjen → «Install» (lejoni «Install unknown apps» për shfletuesin). APK-ja nënshkruhet me çelësin e provës së React Native, mjaftueshëm për testim; për Play Store duhet çelës i vetën (`eas build`).
+
 ## Hapat nga kompjuteri (projekti «relikaj-gjurmim» është krijuar dhe migrimet 0001 + 0002 janë aplikuar)
 1. Supabase → projekti `relikaj-gjurmim` → Authentication → Users → Add user (email + fjalëkalim). Kopjoni User UID.
 2. SQL Editor (zëvendësoni UID):

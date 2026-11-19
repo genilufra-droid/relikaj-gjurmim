@@ -1,27 +1,86 @@
 name: Ndërto APK
+
+# Ndërton APK-në e BioBes Farm dhe e publikon si shkarkim të thjeshtë.
+# Ekzekutohet: me dorë (workflow_dispatch), në çdo push në main ose në degët «arena/**», dhe në PR.
 on:
   workflow_dispatch:
   push:
-    branches: [main, master]
+    branches: [main, master, "arena/**"]
+  pull_request:
+
 concurrency:
   group: apk-${{ github.ref }}
   cancel-in-progress: true
+
 jobs:
   apk:
+    name: Expo → APK
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
-        with: { node-version: 20 }
-      - uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: 17 }
-      - run: yes | sdkmanager --licenses > /dev/null || true
-      - run: npm install --no-audit --no-fund --legacy-peer-deps
-      - run: CI=1 npx expo prebuild --platform android --no-install
-      - name: Ndërto APK (release, i nënshkruar me çelësin e provës)
-        run: cd android && ./gradlew assembleRelease --no-daemon
-      - uses: actions/upload-artifact@v4
         with:
-          name: gjurmim-apk
-          path: android/app/build/outputs/apk/release/*.apk
+          node-version: 20
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Pranimi i lejeve të Android SDK
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
+
+      - name: Instalimi i paketave
+        run: npm install --no-audit --no-fund --legacy-peer-deps
+
+      - name: Gjenerimi i projektit Android
+        run: CI=1 npx expo prebuild --platform android --no-install
+
+      - name: Ndërtimi i APK-së (release)
+        run: cd android && chmod +x gradlew && ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Përgatitja e skedarit
+        run: |
+          mkdir -p out
+          cp android/app/build/outputs/apk/release/app-release.apk out/BioBes-Farm.apk
+          ls -lh out/BioBes-Farm.apk
+          echo "APK_SIZE=$(du -h out/BioBes-Farm.apk | cut -f1)" >> "$GITHUB_ENV"
+
+      - name: Ruajtja si artefakt
+        uses: actions/upload-artifact@v4
+        with:
+          name: BioBes-Farm-APK-${{ github.run_number }}
+          path: out/BioBes-Farm.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publikimi te «Releases» (shkarkim i thjeshtë nga telefoni)
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+        run: |
+          note="APK e ndërtuar automatikisht nga dega ${BRANCH} (${SHA:0:7}) më $(date -u +'%d/%m/%Y %H:%M UTC')."
+          if gh release view apk-latest >/dev/null 2>&1; then
+            gh release upload apk-latest out/BioBes-Farm.apk --clobber
+            gh release edit apk-latest --notes "$note"
+          else
+            gh release create apk-latest out/BioBes-Farm.apk \
+              --title "BioBes Farm — APK (versioni më i fundit)" --notes "$note" --target "$SHA"
+          fi
+
+      - name: Përmbledhje
+        run: |
+          {
+            echo "## APK gati ✅"
+            echo ""
+            echo "- Skedari: \`BioBes-Farm.apk\` (${{ env.APK_SIZE }})"
+            echo "- Artefakt: **BioBes-Farm-APK-${{ github.run_number }}** (te faqja e këtij ekzekutimi)"
+            echo "- Shkarkim i përhershëm: https://github.com/${{ github.repository }}/releases/download/apk-latest/BioBes-Farm.apk"
+            echo "- Instalimi: hapeni lidhjen në telefon → «Install» (duhet leja «Install unknown apps»)"
+          } >> "$GITHUB_STEP_SUMMARY"

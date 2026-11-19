@@ -1,6 +1,7 @@
 // Vëzhgimet në fushë: dëmtues, sëmundje, barëra — me foto dhe këshillë eksperti.
 import React, { useCallback, useEffect, useState } from "react";
 import { Alert, FlatList, ScrollView, Text, View, TouchableOpacity } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 import { sb } from "./supabase";
 import Lookup, { LOOKUPS } from "./Lookup";
 import { s, C, Field, Btn, today } from "./ui";
@@ -10,8 +11,28 @@ const SEV = [[1, "Ulët"], [2, "Mesatar"], [3, "I lartë"]];
 
 export function ObservationForm({ cid, onDone }) {
   const [f, setF] = useState({ plot: null, date: today(), kind: "pest", severity: 1, description: "", photo: "", advice: "" });
-  const [err, setErr] = useState(""), [busy, setBusy] = useState(false);
+  const [err, setErr] = useState(""), [busy, setBusy] = useState(false), [shooting, setShooting] = useState(false);
   const set = (k) => (v) => setF((o) => ({ ...o, [k]: v }));
+  // Foto nga kamera → Storage «field-photos»; nëse ngarkimi dështon, mbetet URL-ja me dorë
+  const snap = async () => {
+    setShooting(true); setErr("");
+    try {
+      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      if (!perm.granted) { setErr("Leja për kamerë u refuzua."); return; }
+      const res = await ImagePicker.launchCameraAsync({ quality: 0.6 });
+      if (res.canceled || !res.assets?.length) return;
+      const asset = res.assets[0];
+      const path = `${cid}/${Date.now()}.jpg`;
+      const form = new FormData();
+      form.append("file", { uri: asset.uri, name: `${Date.now()}.jpg`, type: "image/jpeg" });
+      const { error } = await sb.storage.from("field-photos").upload(path, form, { contentType: "image/jpeg" });
+      if (error) { setErr("Foto u bë, por ngarkimi dështoi: " + error.message); return; }
+      const { data } = sb.storage.from("field-photos").getPublicUrl(path);
+      setF((o) => ({ ...o, photo: data.publicUrl }));
+    } catch (e) {
+      setErr("Fotografia dështoi: " + (e?.message || "provoni përsëri"));
+    } finally { setShooting(false); }
+  };
   const save = async () => {
     if (!f.plot) { setErr("Zgjidhni parcelën"); return; }
     setBusy(true); setErr("");
@@ -41,7 +62,9 @@ export function ObservationForm({ cid, onDone }) {
         </TouchableOpacity>
       ))}
       <Field label="Përshkrimi" value={f.description} onChangeText={set("description")} multiline />
+      <Btn title="📷 Bëj foto me kamera" alt busy={shooting} onPress={snap} />
       <Field label="Foto (URL, nga Storage «field-photos»)" value={f.photo} onChangeText={set("photo")} placeholder="https://…" />
+      {!!f.photo && <Text style={{ color: C.green }}>Foto e bashkangjitur ✓</Text>}
       <Field label="Këshilla e ekspertit" value={f.advice} onChangeText={set("advice")} multiline />
       {!!err && <Text style={s.err}>{err}</Text>}
       <Btn title="Ruaj" onPress={save} busy={busy} />

@@ -1,6 +1,7 @@
 // Parcelat me gjeotagim (GPS) — si Cropin SmartFarm.
 import React, { useCallback, useEffect, useState } from "react";
 import { Alert, FlatList, ScrollView, Text, View, TouchableOpacity, Linking } from "react-native";
+import * as Location from "expo-location";
 import { sb } from "./supabase";
 import Lookup, { LOOKUPS } from "./Lookup";
 import { s, C, Field, Btn, fmt, num } from "./ui";
@@ -10,8 +11,20 @@ const IRRIG = [["none", "Pa ujitje"], ["drip", "Pika-pika"], ["sprinkler", "Spë
 
 export function PlotForm({ cid, onDone }) {
   const [f, setF] = useState({ name: "", code: "", zone: null, farmer: null, area: "", lat: "", lng: "", soil: "", growing: "field", irrigation: "none", note: "" });
-  const [err, setErr] = useState(""), [busy, setBusy] = useState(false);
+  const [err, setErr] = useState(""), [busy, setBusy] = useState(false), [gps, setGps] = useState(false);
   const set = (k) => (v) => setF((o) => ({ ...o, [k]: v }));
+  // Gjeotagim: lexon koordinatat e telefonit (GPS)
+  const useGps = async () => {
+    setGps(true); setErr("");
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") { setErr("Leja për vendndodhje u refuzua. Shkruani koordinatat me dorë."); return; }
+      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      setF((o) => ({ ...o, lat: pos.coords.latitude.toFixed(7), lng: pos.coords.longitude.toFixed(7) }));
+    } catch (e) {
+      setErr("GPS nuk u lexua: " + (e?.message || "provoni përsëri"));
+    } finally { setGps(false); }
+  };
   const save = async () => {
     if (!f.name.trim()) { setErr("Shkruani emrin e parcelës"); return; }
     setBusy(true); setErr("");
@@ -32,6 +45,7 @@ export function PlotForm({ cid, onDone }) {
       <Lookup title="Zona" cid={cid} cfg={LOOKUPS.zone} value={f.zone} onChange={set("zone")} />
       <Lookup title="Fermeri përgjegjës" cid={cid} cfg={LOOKUPS.farmer} value={f.farmer} onChange={set("farmer")} />
       <Field label="Sipërfaqja (hektarë)" value={f.area} onChangeText={set("area")} keyboardType="decimal-pad" />
+      <Btn title="📍 Përdor vendndodhjen time (GPS)" alt busy={gps} onPress={useGps} />
       <Field label="Gjerësia (lat, p.sh. 41.1234567)" value={f.lat} onChangeText={set("lat")} keyboardType="decimal-pad" />
       <Field label="Gjatësia (lng, p.sh. 19.7654321)" value={f.lng} onChangeText={set("lng")} keyboardType="decimal-pad" />
       <Field label="Lloji i tokës" value={f.soil} onChangeText={set("soil")} />

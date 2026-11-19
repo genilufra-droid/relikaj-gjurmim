@@ -4,14 +4,33 @@
     "slug": "relikaj-gjurmim",
     "version": "0.1.0",
     "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "bundleIdentifier": "al.relikaj.gjurmim",
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "BioBes Farm përdor vendndodhjen për gjeotagimin e parcelave dhe vëzhgimeve në fushë.",
+        "NSCameraUsageDescription": "BioBes Farm përdor kamerën për fotot e vëzhgimeve (dëmtues, sëmundje).",
+        "NSPhotoLibraryUsageDescription": "BioBes Farm lexon galerinë për të bashkangjitur foto vëzhgimesh."
+      }
     },
     "android": {
       "package": "al.relikaj.gjurmim",
-      "backgroundColor": "#1f4d2e"
+      "versionCode": 3,
+      "backgroundColor": "#1f4d2e",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "CAMERA",
+        "READ_MEDIA_IMAGES",
+        "INTERNET"
+      ]
     },
+    "plugins": [
+      ["expo-location", { "locationAlwaysAndWhenInUsePermission": "BioBes Farm përdor vendndodhjen për gjeotagimin e parcelave." }],
+      ["expo-image-picker", { "photosPermission": "BioBes Farm lexon galerinë për fotot e vëzhgimeve.", "cameraPermission": "BioBes Farm përdor kamerën për fotot e vëzhgimeve." }]
+    ],
     "splash": {
       "backgroundColor": "#1f4d2e",
       "resizeMode": "contain"
