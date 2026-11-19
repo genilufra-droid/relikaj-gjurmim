@@ -18,6 +18,11 @@ import Stock, { StockForm } from "./src/Stock";
 import Reports from "./src/Reports";
 import Samples, { SampleForm } from "./src/Samples";
 import Users from "./src/Users";
+import Hub from "./src/Hub";
+import Trace from "./src/Trace";
+import Operations, { OperationForm, ApplicationForm } from "./src/Operations";
+import Processing, { BatchForm } from "./src/Processing";
+import Zones, { ZoneForm } from "./src/Zones";
 
 const ROLE = { admin: "Administrator", staf: "Staf", grumbullues: "Grumbullues", fermer: "Fermer" };
 
@@ -28,6 +33,8 @@ export default function App() {
   const [tab, setTab] = useState("pasqyra");
   const [form, setForm] = useState(null);        // formular aktiv ose null
   const [land, setLand] = useState("qira");      // nënndarja e «Toka»
+  const [work, setWork] = useState("punime");    // nënndarja e «Puna në tokë»
+  const [zoneEdit, setZoneEdit] = useState(null); // zona që po ndryshohet
   const [err, setErr] = useState("");
 
   const loadMembers = async (sess) => {
@@ -113,19 +120,12 @@ export default function App() {
   const TABS = [
     ["pasqyra", "Pasqyra", "speedometer-outline"],
     ["parcelat", "Parcelat", "map-outline"],
-    ["kultivimet", "Kultivimet", "leaf-outline"],
-    ["detyra", "Detyrat", "checkbox-outline"],
-    ["vezhgime", "Vëzhgimet", "bug-outline"],
-    ["inpute", "Inputet", "nutrition-outline"],
-    ["toka", "Toka", "home-outline"],
-    ["dokumente", "Dokumentet", "document-text-outline"],
-    ["blerje", "Blerjet", "basket-outline"],
-    ["magazine", "Magazina", "cube-outline"],
+    ["gjurmimi", "Gjurmimi", "git-branch-outline"],
+    ["modulet", "Modulet", "grid-outline"],
     ["raporte", "Raporte", "bar-chart-outline"],
-    ...(staff ? [["mostra", "Mostra", "flask-outline"]] : []),
-    ...(role === "admin" ? [["perdorues", "Përdorues", "people-outline"]] : []),
     ["dil", "Dil", "log-out-outline"],
   ];
+  const PRIMARY = ["pasqyra", "parcelat", "gjurmimi", "modulet", "raporte"];
   const done = () => setForm(null);
   const go = (k) => { setForm(null); setTab(k); };
 
@@ -140,17 +140,26 @@ export default function App() {
   else if (form === "input") body = <InputForm cid={cid} onDone={done} />;
   else if (form === "qira" || form === "pagesa" || form === "kujtues") body = <LandForm cid={cid} mode={form} onDone={done} />;
   else if (form === "dokument") body = <DocumentForm cid={cid} onDone={done} />;
+  else if (form === "punim") body = <OperationForm cid={cid} onDone={done} />;
+  else if (form === "trajtim") body = <ApplicationForm cid={cid} onDone={done} />;
+  else if (form === "batch") body = <BatchForm cid={cid} onDone={done} />;
+  else if (form === "zone") body = <ZoneForm cid={cid} zone={zoneEdit} onDone={() => { setZoneEdit(null); done(); }} />;
+  else if (tab === "modulet") body = <Hub role={role} onGo={go} />;
+  else if (tab === "gjurmimi") body = <Trace key={cid} cid={cid} />;
   else if (tab === "pasqyra") body = <Dashboard key={cid} cid={cid} role={role} onGo={go} />;
   else if (tab === "parcelat") body = <Plots key={cid} cid={cid} role={role} onNew={() => setForm("parcela")} onOpen={go} />;
   else if (tab === "kultivimet") body = <Cultivations key={cid} cid={cid} role={role} onNew={() => setForm("kultivim")} />;
   else if (tab === "detyra") body = <Tasks key={cid} cid={cid} role={role} onNew={() => setForm("detyre")} />;
   else if (tab === "vezhgime") body = <Observations key={cid} cid={cid} role={role} onNew={() => setForm("vezhgim")} />;
   else if (tab === "inpute") body = <Inputs key={cid} cid={cid} role={role} onNew={() => setForm("input")} />;
+  else if (tab === "puna") body = <Operations key={cid} cid={cid} role={role} part={work} onPart={setWork} onNew={() => setForm(work === "punime" ? "punim" : "trajtim")} />;
+  else if (tab === "perpunimi") body = <Processing key={cid} cid={cid} role={role} onNew={() => setForm("batch")} />;
+  else if (tab === "zonat") body = <Zones key={cid} cid={cid} role={role} onNew={() => { setZoneEdit(null); setForm("zone"); }} onEdit={(z) => { setZoneEdit(z); setForm("zone"); }} />;
   else if (tab === "toka") body = <Land key={cid} cid={cid} role={role} part={land} onPart={setLand} onNew={() => setForm(land)} />;
   else if (tab === "dokumente") body = <Documents key={cid} cid={cid} role={role} onNew={() => setForm("dokument")} />;
   else if (tab === "blerje") body = <Purchases key={cid} cid={cid} role={role} onNew={() => setForm("blerje")} />;
   else if (tab === "magazine") body = <Stock key={cid} cid={cid} role={role} onNew={() => setForm("magazine")} />;
-  else if (tab === "mostra") body = <Samples key={cid} cid={cid} onNew={() => setForm("mostra")} />;
+  else if (tab === "mostra") body = <Samples key={cid} cid={cid} role={role} onNew={() => setForm("mostra")} />;
   else if (tab === "raporte") body = <Reports cid={cid} />;
   else body = <Users cid={cid} me={session.user.id} />;
 
@@ -180,6 +189,15 @@ export default function App() {
         </View>
       </View>
 
+      {!form && !PRIMARY.includes(tab) && (
+        <View style={{ backgroundColor: C.bg, paddingHorizontal: 16, paddingTop: 8 }}>
+          <TouchableOpacity style={s.backRow} onPress={() => go("modulet")} hitSlop={8}>
+            <Ionicons name="chevron-back" size={18} color={C.brand} />
+            <Text style={s.backT}>Modulet</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {!!form && (
         <View style={{ backgroundColor: C.bg, paddingHorizontal: 16, paddingTop: 8 }}>
           <TouchableOpacity style={s.backRow} onPress={done} hitSlop={8}>
@@ -193,7 +211,7 @@ export default function App() {
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.tabs} contentContainerStyle={{ paddingHorizontal: 4 }}>
         {TABS.map(([k, t, icon]) => {
-          const on = tab === k && !form && k !== "dil";
+          const on = (tab === k || (k === "modulet" && !PRIMARY.includes(tab) && k !== "dil")) && !form && k !== "dil";
           return (
             <TouchableOpacity key={k} style={[s.tab, on && s.tabOn]} onPress={() => (k === "dil" ? sb.auth.signOut() : go(k))} activeOpacity={0.8}>
               <Ionicons name={icon} size={20} color={on ? C.brand : C.mute} />

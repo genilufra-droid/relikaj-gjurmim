@@ -121,28 +121,32 @@ export function farmerReport(farmer: string, rows: FarmerLot[]): Report {
   return { name: `Fermeri_${safeName(farmer)}`, sheet: farmer, orientation: "portrait", widths, rows: g.rows, merges: g.merges };
 }
 
-// ---- 5. Kartela e gjurmueshmërisë (Faza 5): nga parcela te klienti, për një lot ----
-export interface TracePurchase { date: string; farmer_name: string; zone_code: string; qty_fresh: number; qty_dry: number; amount: number }
-export interface TraceMove { date: string; kind: string; qty_in: number; qty_out: number; counterparty: string }
-export interface TraceSample { date: string; customer: string; code: string; tracking: string; result: string }
+// ---- 5. Kartela e gjurmueshmërisë (Faza 6): nga toka te klienti, për një lot ----
+export interface TracePurchase { date: string; farmer_name: string; zone_code: string; plot: string; collector: string; qty_fresh: number; qty_dry: number; amount: number }
+export interface TraceMove { date: string; kind: string; qty_in: number; qty_out: number; counterparty: string; customer?: string; document?: string }
+export interface TraceSample { date: string; point: string; customer: string; lab: string; moisture?: number | null; purity?: number | null; passed?: boolean | null; result: string }
+export interface TraceBatch { code: string; date: string; method: string; input_qty: number; output_qty: number; yield_pct: number; source_lot: string }
 export interface TraceInput { date: string; category: string; description: string; amount: number }
-export function traceReport(o: { company: string; product: string; lot: string; year: number; purchases: TracePurchase[]; moves: TraceMove[]; samples: TraceSample[]; inputs: TraceInput[] }): Report {
-  const widths = [14, 20, 18, 15, 17, 16];
-  const g = new Grid(6);
+export function traceReport(o: {
+  company: string; product: string; lot: string; year: number;
+  purchases: TracePurchase[]; moves: TraceMove[]; samples: TraceSample[]; batches: TraceBatch[]; inputs: TraceInput[];
+}): Report {
+  const NC = 8;
+  const widths = [13, 17, 17, 16, 13, 12, 14, 17];
+  const g = new Grid(NC);
   const t1 = g.row(30), t2 = g.row(30);
-  g.merge(t1, 0, t2, 5, { v: "KARTELA E GJURMUESHMËRISË", bold: true, size: 19, align: "c", valign: "m", fill: COLORS.green });
+  g.merge(t1, 0, t2, NC - 1, { v: "KARTELA E GJURMUESHMËRISË", bold: true, size: 19, align: "c", valign: "m", fill: COLORS.green });
   const sub = g.row(22);
-  g.merge(sub, 0, sub, 5, { v: `${o.company}  ·  ${o.product}  ·  Loti ${o.lot}  ·  Viti ${o.year}`, size: 11, align: "c", valign: "m" });
+  g.merge(sub, 0, sub, NC - 1, { v: `${o.company}  ·  ${o.product}  ·  Loti ${o.lot}  ·  Viti ${o.year}`, size: 11, align: "c", valign: "m" });
   g.blank(8);
 
   const c = (v: string | number | null | undefined, x: Partial<Cell> = {}): Cell => {
     const vv = v ?? "";
     return { v: vv, size: 11, border: true, valign: "m", wrap: true, fmt: typeof vv === "number" ? NUM : undefined, ...x };
   };
-  // Rrjetë me 6 kolona; çdo tabelë shpërndan kolonat sipas përmbajtjes (bashkime).
   const table = (title: string, heads: [string, number][], body: Cell[][]) => {
     const h = g.row(24);
-    g.merge(h, 0, h, 5, { v: title, bold: true, size: 12, fill: COLORS.grey, valign: "m" });
+    g.merge(h, 0, h, NC - 1, { v: title, bold: true, size: 12, fill: COLORS.grey, valign: "m" });
     const cols: [number, number][] = [];
     let x = 0;
     for (const [, span] of heads) { cols.push([x, x + span - 1]); x += span; }
@@ -152,36 +156,60 @@ export function traceReport(o: { company: string; product: string; lot: string; 
     for (const row of body) {
       const r = g.row(20);
       row.forEach((cell, i) => {
-        const [a, b] = cols[i] ?? [5, 5];
+        const [a, b] = cols[i] ?? [NC - 1, NC - 1];
         if (b > a) g.merge(r, a, r, b, cell); else g.set(r, a, cell);
       });
     }
   };
 
-  table("1. VJELJA — fermerët dhe zonat", [["Data", 1], ["Fermeri", 1], ["Zona", 1], ["Njome (kg)", 1], ["Thatë (kg)", 1], ["Shuma (lekë)", 1]], [
-    ...o.purchases.map((p) => [c(dFull(p.date)), c(p.farmer_name), c(p.zone_code), c(num(p.qty_fresh)), c(num(p.qty_dry)), c(num(p.amount))]),
-    [c("Gjithsej", { bold: true, fill: COLORS.grey }), c("", { fill: COLORS.grey }), c("", { fill: COLORS.grey }),
+  // 1. Përmbledhja e zinxhirit
+  const collectors = [...new Set(o.purchases.map((p) => p.collector).filter(Boolean))].join(", ");
+  const plots = new Set(o.purchases.map((p) => p.plot).filter(Boolean)).size;
+  const farmers = new Set(o.purchases.map((p) => p.farmer_name).filter(Boolean)).size;
+  const head = g.row(22);
+  g.merge(head, 0, head, NC - 1, {
+    v: `Vjen nga ${plots} parcelë dhe ${farmers} fermerë${collectors ? `; grumbulluar nga ${collectors}` : ""}. ${o.batches.length} batch përpunimi, ${o.samples.length} mostra, ${o.moves.length} lëvizje magazine.`,
+    size: 11, align: "l", valign: "m", wrap: true, border: true,
+  });
+  g.blank(6);
+
+  table("1. VJELJA — parcela, fermerë dhe grumbullues", [["Data", 1], ["Fermeri", 1], ["Parcela", 1], ["Grumbulluesi", 1], ["Zona", 1], ["Njomë (kg)", 1], ["Thatë (kg)", 1], ["Shuma (lekë)", 1]], [
+    ...o.purchases.map((p) => [c(dFull(p.date)), c(p.farmer_name), c(p.plot), c(p.collector), c(p.zone_code), c(num(p.qty_fresh)), c(num(p.qty_dry)), c(num(p.amount))]),
+    [c("Gjithsej", { bold: true, fill: COLORS.grey }), c("", { fill: COLORS.grey }), c("", { fill: COLORS.grey }), c("", { fill: COLORS.grey }), c("", { fill: COLORS.grey }),
       c(sum(o.purchases, "qty_fresh"), { bold: true, fill: COLORS.grey }), c(sum(o.purchases, "qty_dry"), { bold: true, fill: COLORS.grey }),
       c(sum(o.purchases, "amount"), { bold: true, fill: COLORS.grey })],
   ]);
 
-  table("2. MAGAZINA — dorëzime dhe eksport", [["Data", 1], ["Lloji", 1], ["Hyrje (kg)", 1], ["Dalje (kg)", 1], ["Palë / ku shkoi", 2]],
-    o.moves.length
-      ? o.moves.map((m) => [c(dFull(m.date)), c(m.kind), c(num(m.qty_in)), c(num(m.qty_out)), c(m.counterparty)])
-      : [[c("Asnjë lëvizje magazinë për këtë lot"), c(""), c(""), c(""), c("")]]);
-
-  table("3. MOSTRAT — protokolli i analizave", [["Data", 1], ["Klienti", 1], ["Kodi i mostrës", 1], ["Tracking", 1], ["Rezultati", 2]],
+  table("2. MOSTRAT — ku u morën dhe si dolën", [["Data", 1], ["Vendi", 1], ["Klienti", 1], ["Laboratori", 2], ["Lagështi %", 1], ["Pastërti %", 1], ["Vendimi", 1]],
     o.samples.length
-      ? o.samples.map((s) => [c(dFull(s.date)), c(s.customer), c(s.code, { size: 9 }), c(s.tracking), c(s.result)])
-      : [[c("Asnjë mostër e regjistruar", { valign: "m" }), c(""), c(""), c(""), c("")]]);
+      ? o.samples.map((s) => [c(dFull(s.date)), c(s.point), c(s.customer), c(s.lab), c(s.moisture ?? ""), c(s.purity ?? ""), c(s.passed === true ? "Kaluar" : s.passed === false ? "Refuzuar" : "Në pritje")])
+      : [[c("Asnjë mostër e regjistruar"), c(""), c(""), c(""), c(""), c(""), c("")]]);
+
+  if (o.samples.some((s) => s.result)) {
+    table("2b. REZULTATET E ANALIZAVE", [["Data", 1], ["Vendi", 1], ["Rezultati", 6]],
+      o.samples.filter((s) => s.result).map((s) => [c(dFull(s.date)), c(s.point), c(s.result)]));
+  }
+
+  table("3. PËRPUNIMI — batch-et në qendër", [["Batch", 1], ["Data", 1], ["Metoda", 1], ["Hyrje (kg)", 1], ["Dalje (kg)", 1], ["Rendiment %", 1], ["Loti burim", 2]],
+    o.batches.length
+      ? o.batches.map((b) => [c(b.code, { size: 9 }), c(dFull(b.date)), c(b.method), c(num(b.input_qty)), c(num(b.output_qty)), c(num(b.yield_pct)), c(b.source_lot, { size: 9 })])
+      : [[c("Pa përpunim të regjistruar"), c(""), c(""), c(""), c(""), c(""), c("")]]);
+
+  table("4. MAGAZINA DHE EKSPORTI — ku shkoi malli", [["Data", 1], ["Lloji", 1], ["Hyrje (kg)", 1], ["Dalje (kg)", 1], ["Klienti / pala", 2], ["Dokumenti", 2]],
+    o.moves.length
+      ? o.moves.map((m) => [c(dFull(m.date)), c(m.kind), c(num(m.qty_in)), c(num(m.qty_out)), c(m.customer || m.counterparty), c(m.document ?? "")])
+      : [[c("Asnjë lëvizje magazinë për këtë lot"), c(""), c(""), c(""), c(""), c("")]]);
 
   if (o.inputs.length) {
-    table("4. INPUTET — shpenzime parcele dhe trajtime", [["Data", 1], ["Lloji", 1], ["Përshkrimi", 2], ["Shuma (lekë)", 2]],
+    table("5. INPUTET — shpenzime parcele dhe trajtime", [["Data", 1], ["Lloji", 1], ["Përshkrimi", 4], ["Shuma (lekë)", 2]],
       o.inputs.map((i) => [c(dFull(i.date)), c(i.category), c(i.description), c(num(i.amount))]));
   }
   const tot = g.row(24);
-  g.merge(tot, 0, tot, 5, { v: `Gjurmueshmëri e plotë: ${o.purchases.length} vjelje · ${o.moves.length} lëvizje magazine · ${o.samples.length} mostra · ${o.inputs.length} inpute`, size: 10, align: "c", valign: "m" });
-  return { name: `Kartela_${safeName(o.lot)}`, sheet: o.lot, orientation: "portrait", widths, rows: g.rows, merges: g.merges };
+  g.merge(tot, 0, tot, NC - 1, {
+    v: `Gjurmueshmëri e plotë: ${o.purchases.length} vjelje · ${o.batches.length} batch · ${o.moves.length} lëvizje magazine · ${o.samples.length} mostra · ${o.inputs.length} inpute`,
+    size: 10, align: "c", valign: "m",
+  });
+  return { name: `Kartela_${safeName(o.lot)}`, sheet: o.lot, orientation: "landscape", widths, rows: g.rows, merges: g.merges };
 }
 
 // ---- 6. Raport parcelash dhe kostosh (për menaxhimin e fermës) ----
@@ -303,4 +331,32 @@ export function growersReport(year: number, farmers: FarmerRow[]): Report {
     s = e + 1;
   }
   return { name: `Lista_vjelesve_${year}`, sheet: `VJELESIT ${year}`, orientation: "landscape", widths, rows: g.rows, merges: g.merges };
+}
+
+// ---- 10. Zonat e grumbullimit: kush mbulon cilat parcela dhe sa grumbullohet ----
+export interface ZoneRow {
+  code: string; name?: string | null; collector_name?: string | null; collection_point?: string | null; region?: string | null;
+  plots: number; farmers: number; area_ha: number; fresh_year: number; dry_year: number; amount_year: number;
+}
+export function zonesReport(company: string, year: number, rows: ZoneRow[]): Report {
+  const widths = [5, 16, 22, 19, 17, 14, 9, 10, 7, 13, 13, 16];
+  const g = new Grid(12);
+  const t1 = g.row(31.5), t2 = g.row(31.5);
+  g.merge(t1, 0, t2, 11, { v: `${company.toUpperCase()} — ZONAT E GRUMBULLIMIT ${year}`, bold: true, size: 19, align: "c", valign: "m", fill: COLORS.green });
+  g.blank(8);
+  const h = g.row(46, true);
+  ["Nr.", "KODI", "ZONA", "GRUMBULLUESI", "PIKA", "RAJONI", "PARCELA", "FERMERË", "ha", "NJOMË (kg)", "THATË (kg)", "VLERA (lekë)"].forEach((v, i) =>
+    g.set(h, i, { v, bold: true, size: 11, align: "c", valign: "m", wrap: true, border: true, fill: COLORS.green }));
+  const c = (v: string | number | null, x: Partial<Cell> = {}): Cell => ({ v, size: 11, border: true, valign: "m", wrap: true, fmt: typeof v === "number" ? NUM : undefined, ...x });
+  rows.forEach((r, i) => {
+    const row = g.row(24);
+    [c(i + 1, { align: "c" }), c(r.code, { bold: true }), c(r.name ?? ""), c(r.collector_name ?? ""), c(r.collection_point ?? ""), c(r.region ?? ""),
+      c(num(r.plots), { align: "c" }), c(num(r.farmers), { align: "c" }), c(num(r.area_ha)), c(num(r.fresh_year)), c(num(r.dry_year)), c(num(r.amount_year))]
+      .forEach((cell, k) => g.set(row, k, cell));
+  });
+  const tot = g.row(24);
+  g.merge(tot, 0, tot, 5, c("GJITHSEJ", { bold: true, align: "r", fill: COLORS.grey }));
+  [sum(rows, "plots"), sum(rows, "farmers"), 0, sum(rows, "fresh_year"), sum(rows, "dry_year"), sum(rows, "amount_year")].forEach((v, k) =>
+    g.set(tot, 6 + k, c(k === 2 ? null : v, { bold: true, fill: COLORS.grey })));
+  return { name: `Zonat_${year}`, sheet: `ZONAT ${year}`, orientation: "landscape", widths, rows: g.rows, merges: g.merges };
 }

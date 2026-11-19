@@ -76,6 +76,11 @@ export default function Reports({ cid }) {
 
       <SectionTitle>Ferma</SectionTitle>
 
+      <ReportCard icon="people-outline" title="Raport zonash dhe grumbulluesish" text="Kush mbulon cilat parcela, sa fermerë dhe sa kg në vit">
+        <FmtBtn label="Excel" icon="grid-outline" busy={busy === "z1"} onPress={run("z1", { type: "zones", format: "xlsx", year: y })} />
+        <FmtBtn label="PDF" icon="document-text-outline" busy={busy === "z2"} onPress={run("z2", { type: "zones", format: "pdf", year: y })} />
+      </ReportCard>
+
       <ReportCard icon="map-outline" title="Raport parcelash" text="Sipërfaqe, kultivime, detyra, shpenzime dhe kosto për hektar">
         <FmtBtn label="Excel" icon="grid-outline" busy={busy === "p1"} onPress={run("p1", { type: "plots", format: "xlsx", year: y })} />
         <FmtBtn label="PDF" icon="document-text-outline" busy={busy === "p2"} onPress={run("p2", { type: "plots", format: "pdf", year: y })} />
@@ -99,7 +104,7 @@ export default function Reports({ cid }) {
         <FmtBtn label="PDF" icon="document-text-outline" disabled={!lot.trim()} busy={busy === "l2"} onPress={run("l2", { type: "lot", format: "pdf", lot_code: lot.trim() })} />
       </ReportCard>
 
-      <ReportCard icon="shield-checkmark-outline" title="Kartela e gjurmueshmërisë" text="Nga fermeri te klienti: vjelja, magazina, mostrat, inputet">
+      <ReportCard icon="shield-checkmark-outline" title="Kartela e gjurmueshmërisë" text="Nga toka te klienti: parcelat, grumbulluesi, mostrat, përpunimi, eksporti">
         <FmtBtn label="Excel" icon="grid-outline" disabled={!lot.trim()} busy={busy === "t1"} onPress={run("t1", { type: "trace", format: "xlsx", lot_code: lot.trim() })} />
         <FmtBtn label="PDF" icon="document-text-outline" disabled={!lot.trim()} busy={busy === "t2"} onPress={run("t2", { type: "trace", format: "pdf", lot_code: lot.trim() })} />
       </ReportCard>
@@ -111,7 +116,7 @@ export default function Reports({ cid }) {
         <FmtBtn label="PDF" icon="document-text-outline" disabled={!farmer} busy={busy === "f2"} onPress={run("f2", { type: "farmer", format: "pdf", farmer_id: farmer, year: y })} />
       </ReportCard>
 
-      <Text style={[s.mute, { fontSize: 11, marginTop: 18, textAlign: "center" }]}>Raportet krijohen në server (Supabase Functions) — Excel dhe PDF kanë të njëjtën pamje.</Text>
+      <Text style={[s.mute, { fontSize: 11, marginTop: 18, textAlign: "center" }]}>Raportet krijohen brenda telefonit — Excel dhe PDF kanë të njëjtën pamje dhe mund të ndahen direkt.</Text>
     </ScrollView>
   );
 }

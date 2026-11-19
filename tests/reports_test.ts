@@ -1,6 +1,6 @@
 import { buildXlsx } from "../supabase/functions/reports/xlsx.ts";
 import { buildPdf } from "../supabase/functions/reports/pdf.ts";
-import { summaryReport, lotSheetReport, farmerReport, growersReport, traceReport, plotsReport, inputsReport, tasksReport } from "../supabase/functions/reports/defs.ts";
+import { summaryReport, lotSheetReport, farmerReport, growersReport, traceReport, plotsReport, inputsReport, tasksReport, zonesReport } from "../supabase/functions/reports/defs.ts";
 const out = process.argv[2] || "/var/tmp/rep";
 import { mkdirSync, writeFileSync } from "node:fs";
 mkdirSync(out, { recursive: true });
@@ -32,16 +32,24 @@ const reps = [
   traceReport({
     company: "BioBes Mersin Sinani", product: "Mjedër", lot: "W010F/1a-I-115-26", year: 2026,
     purchases: [
-      { date: "2026-06-06", farmer_name: "Mersin Sinani", zone_code: "W010F/1a", qty_fresh: 500, qty_dry: 163, amount: 130400 },
-      { date: "2026-06-14", farmer_name: "Agron Kaci", zone_code: "W010F/1a", qty_fresh: 300, qty_dry: 98, amount: 78400 },
+      { date: "2026-06-06", farmer_name: "Mersin Sinani", zone_code: "W010F/1a", plot: "K01", collector: "Ilir Koçi", qty_fresh: 500, qty_dry: 163, amount: 130400 },
+      { date: "2026-06-14", farmer_name: "Agron Kaci", zone_code: "W010F/1a", plot: "K02", collector: "Ilir Koçi", qty_fresh: 300, qty_dry: 98, amount: 78400 },
     ],
     moves: [
-      { date: "2026-06-20", kind: "dorezim", qty_in: 0, qty_out: 261, counterparty: "BioBes" },
-      { date: "2026-07-31", kind: "eksport", qty_in: 0, qty_out: 261, counterparty: "Warland" },
+      { date: "2026-06-20", kind: "dorezim", qty_in: 0, qty_out: 261, counterparty: "BioBes", customer: "", document: "DF-12" },
+      { date: "2026-07-31", kind: "eksport", qty_in: 0, qty_out: 261, counterparty: "Warland", customer: "Warland GmbH", document: "EXP-001" },
     ],
-    samples: [{ date: "2026-07-02", customer: "Warland", code: "W010F/1a-I-115-26", tracking: "DHL-123456", result: "Pastërtia 99.2%" }],
+    batches: [{ code: "B-26-01", date: "2026-06-21", method: "Tharje", input_qty: 261, output_qty: 240, yield_pct: 92, source_lot: "W010F/1a-I-115-26" }],
+    samples: [
+      { date: "2026-06-05", point: "Në parcelë", customer: "", lab: "AlbInspekt", moisture: 11.5, purity: 99.1, passed: true, result: "Pastërtia 99,1%" },
+      { date: "2026-07-02", point: "Në qendër", customer: "Warland", lab: "AlbInspekt", moisture: 10.8, purity: 99.2, passed: true, result: "Pastërtia 99.2%" },
+    ],
     inputs: [{ date: "2026-03-02", category: "fert", description: "Pleh organik", amount: 25000 }],
   }),
+  zonesReport("BioBes Mersin Sinani", 2026, [
+    { code: "W010F/1a", name: "Tepelenë – luginë", collector_name: "Ilir Koçi", collection_point: "Pika Tepelenë", region: "Tepelenë", plots: 42, farmers: 31, area_ha: 78.5, fresh_year: 52340, dry_year: 17420, amount_year: 13936000 },
+    { code: "W01/2a", name: "Çorovodë", collector_name: "Arben Memi", collection_point: "Pika Çorovodë", region: "Skrapar", plots: 18, farmers: 14, area_ha: 31.2, fresh_year: 18760, dry_year: 6240, amount_year: 4992000 },
+  ]),
 ];
 for (const r of reps) {
   writeFileSync(`${out}/${r.name}.xlsx`, await buildXlsx(r));

@@ -7,7 +7,7 @@ import Lookup, { LOOKUPS } from "./Lookup";
 import { s, C, Btn, Field, Card, Chip, Empty, ErrorBox, Loading, Segmented, Stat, money, num, fmt, today, dShort, dueLabel } from "./ui";
 
 export function LandForm({ cid, mode, onDone }) {
-  const [f, setF] = useState({ plot: null, owner: "", start: "", end: "", rent: "", date: today(), amount: "", method: "", farmer: null, title: "", note: "" });
+  const [f, setF] = useState({ plot: null, owner: "", start: "", end: "", rent: "", term: "", deposit: "", date: today(), amount: "", method: "", payer: "company", receipt: "", farmer: null, title: "", note: "" });
   const [err, setErr] = useState(""), [busy, setBusy] = useState(false);
   const set = (k) => (v) => setF((o) => ({ ...o, [k]: v }));
 
@@ -19,6 +19,7 @@ export function LandForm({ cid, mode, onDone }) {
       ({ error } = await sb.from("leases").insert({
         company_id: cid, plot_id: f.plot, owner_name: f.owner, start_date: f.start || null,
         end_date: f.end || null, rent_amount: num(f.rent), note: f.note,
+        term_months: f.term ? Math.round(num(f.term)) : null, deposit: num(f.deposit),
       }));
     } else if (mode === "pagesa") {
       if (!f.amount) { setBusy(false); setErr("Shkruani shumën"); return; }
@@ -29,6 +30,7 @@ export function LandForm({ cid, mode, onDone }) {
       }
       ({ error } = await sb.from("payments").insert({
         company_id: cid, lease_id, farmer_id: f.farmer, date: f.date, amount: num(f.amount), method: f.method, note: f.note,
+        paid_by: f.payer, receipt_no: f.receipt,
       }));
     } else {
       if (!f.title.trim()) { setBusy(false); setErr("Shkruani kujtuesin"); return; }
@@ -54,6 +56,10 @@ export function LandForm({ cid, mode, onDone }) {
             <View style={{ flex: 1 }}><Field label="Deri më" value={f.end} onChangeText={set("end")} placeholder="2026-12-31" /></View>
           </View>
           <Field label="Qiraja vjetore (lekë)" value={f.rent} onChangeText={set("rent")} keyboardType="decimal-pad" placeholder="120000" />
+          <View style={{ flexDirection: "row", gap: 10 }}>
+            <View style={{ flex: 1 }}><Field label="Afati (muaj)" value={f.term} onChangeText={set("term")} keyboardType="number-pad" placeholder="12" /></View>
+            <View style={{ flex: 1 }}><Field label="Garancia (lekë)" value={f.deposit} onChangeText={set("deposit")} keyboardType="decimal-pad" /></View>
+          </View>
         </View>
       )}
       {mode === "pagesa" && (
@@ -61,6 +67,9 @@ export function LandForm({ cid, mode, onDone }) {
           <Field label="Data" value={f.date} onChangeText={set("date")} placeholder="2026-11-19" />
           <Field label="Shuma (lekë)" value={f.amount} onChangeText={set("amount")} keyboardType="decimal-pad" placeholder="50000" />
           <Field label="Mënyra" value={f.method} onChangeText={set("method")} placeholder="bankë / cash" />
+          <Text style={s.label}>Kush paguan</Text>
+          <Segmented options={[["company", "Kompania"], ["collector", "Grumbulluesi"]]} value={f.payer} onChange={set("payer")} />
+          <Field label="Nr. i faturës / fletëpagesës" value={f.receipt} onChangeText={set("receipt")} placeholder="K-01" />
           <Lookup title="Fermeri (për pagesa vjeljeje)" cid={cid} cfg={LOOKUPS.farmer} value={f.farmer} onChange={set("farmer")} />
         </View>
       )}

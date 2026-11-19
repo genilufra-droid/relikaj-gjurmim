@@ -1,13 +1,13 @@
 // Gjeneron raportin nga të dhënat e Supabase (me lejet e përdoruesit, pra RLS vlen) dhe e kthen si Excel ose PDF.
 import { buildXlsx } from "./xlsx.ts";
 import { buildPdf } from "./pdf.ts";
-import { farmerReport, growersReport, inputsReport, lotSheetReport, plotsReport, summaryReport, tasksReport, traceReport } from "./defs.ts";
+import { farmerReport, growersReport, inputsReport, lotSheetReport, plotsReport, summaryReport, tasksReport, traceReport, zonesReport } from "./defs.ts";
 import type { Report } from "./types.ts";
 
 // Pjesa e klientit Supabase që përdorim (lehtëson testimin)
 export interface Sb { from(table: string): any }
 
-export interface Req { type: "summary" | "lot" | "farmer" | "growers" | "trace" | "plots" | "inputs" | "tasks"; format: "xlsx" | "pdf"; company_id: number; year?: number; lot_code?: string; farmer_id?: number }
+export interface Req { type: "summary" | "lot" | "farmer" | "growers" | "trace" | "plots" | "inputs" | "tasks" | "zones"; format: "xlsx" | "pdf"; company_id: number; year?: number; lot_code?: string; farmer_id?: number }
 export class ReportError extends Error { constructor(msg: string, public status = 400) { super(msg); } }
 
 const MIME = { xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", pdf: "application/pdf" };
@@ -66,18 +66,39 @@ export async function makeReport(sb: Sb, r: Req): Promise<Report> {
     if (!co) throw new ReportError("Kompania nuk u gjet", 404);
     const [s] = await q(sb.from("lot_summary").select("product_id,product,lot_code").eq("company_id", cid).eq("lot_code", r.lot_code));
     if (!s) throw new ReportError("Loti nuk u gjet", 404);
-    const purchases = await q(sb.from("purchases").select("date,qty_fresh,qty_dry,amount,farmers(first_name,last_name),zones(code)")
+    const purchases = await q(sb.from("purchases").select("date,qty_fresh,qty_dry,amount,farmers(first_name,last_name),zones(code,collector_name),plots(name,code)")
       .eq("company_id", cid).eq("lot_code", r.lot_code).order("date").order("id"));
-    const moves = await q(sb.from("stock_moves").select("date,kind,qty_in,qty_out,counterparty").eq("company_id", cid).eq("lot_code", r.lot_code).order("date").order("id"));
-    const samples = await q(sb.from("samples").select("date,code,result,customers(name),shipments(tracking_no)").eq("company_id", cid).eq("code", r.lot_code).order("date"));
+    const moves = await q(sb.from("stock_moves").select("date,kind,qty_in,qty_out,counterparty,document_no,customers(name)")
+      .eq("company_id", cid).eq("lot_code", r.lot_code).order("date").order("id"));
+    const samples = await q(sb.from("samples").select("date,point,lab,moisture,purity,passed,result,customers(name)")
+      .eq("company_id", cid).eq("code", r.lot_code).order("date"));
+    const batches = await q(sb.from("batch_summary").select("code,date,method,input_qty,output_qty,yield_pct,source_lot")
+      .eq("company_id", cid).eq("source_lot", r.lot_code).order("date"));
     const inputs = await q(sb.from("inputs").select("date,category,description,amount").eq("company_id", cid).eq("lot_code", r.lot_code).order("date"));
     const y = 2000 + Number(r.lot_code.slice(-2));
+    const POINT: Record<string, string> = { plot: "Në parcelë", center: "Në qendër", warehouse: "Në magazinë" };
+    const METHOD: Record<string, string> = { drying: "Tharje", cleaning: "Pastrim", cutting: "Prerje", grading: "Klasifikim", oil: "Nxjerrje vaji", packing: "Paketim", other: "Tjetër" };
     return traceReport({
       company: co.name, product: s.product, lot: r.lot_code, year: y,
-      purchases: purchases.map((p: any) => ({ date: p.date, farmer_name: `${p.farmers?.first_name ?? ""} ${p.farmers?.last_name ?? ""}`.trim(), zone_code: p.zones?.code ?? "", qty_fresh: p.qty_fresh, qty_dry: p.qty_dry, amount: p.amount })),
-      moves, samples: samples.map((x: any) => ({ date: x.date, customer: x.customers?.name ?? "", code: x.code, tracking: x.shipments?.tracking_no ?? "", result: x.result ?? "" })),
+      purchases: purchases.map((p: any) => ({
+        date: p.date, farmer_name: `${p.farmers?.first_name ?? ""} ${p.farmers?.last_name ?? ""}`.trim(),
+        zone_code: p.zones?.code ?? "", plot: p.plots?.code || p.plots?.name || "",
+        collector: p.zones?.collector_name ?? "", qty_fresh: p.qty_fresh, qty_dry: p.qty_dry, amount: p.amount,
+      })),
+      moves: moves.map((m: any) => ({ ...m, customer: m.customers?.name ?? "", document: m.document_no ?? "" })),
+      samples: samples.map((x: any) => ({
+        date: x.date, point: POINT[x.point] ?? x.point ?? "", customer: x.customers?.name ?? "", lab: x.lab ?? "",
+        moisture: x.moisture, purity: x.purity, passed: x.passed, result: x.result ?? "",
+      })),
+      batches: batches.map((b: any) => ({ ...b, method: METHOD[b.method] ?? b.method })),
       inputs,
     });
+  }
+  if (r.type === "zones") {
+    const [co] = await q(sb.from("companies").select("name").eq("id", cid));
+    if (!co) throw new ReportError("Kompania nuk u gjet", 404);
+    const rows = await q(sb.from("zone_summary").select("*").eq("company_id", cid).order("code"));
+    return zonesReport(co.name, year, rows);
   }
   if (r.type === "plots") {
     const [co] = await q(sb.from("companies").select("name").eq("id", cid));

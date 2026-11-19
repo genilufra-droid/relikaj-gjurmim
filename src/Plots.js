@@ -9,9 +9,11 @@ import { s, C, Btn, Field, Card, Chip, Empty, ErrorBox, Loading, SearchBar, Segm
 
 const GROWING = [["field", "Fushë e hapur", "leaf-outline"], ["greenhouse", "Serë", "home-outline"]];
 const IRRIG = [["none", "Pa ujitje"], ["drip", "Pika-pika"], ["sprinkler", "Spërkatje"], ["furrow", "Brazda"]];
+const OWN = [["owned", "Në pronësi"], ["leased", "Me qira"], ["wild", "E egër"]];
+const PSTAT = [["active", "Aktive"], ["fallow", "Djerr"], ["resting", "Në pushim"]];
 
 export function PlotForm({ cid, onDone }) {
-  const [f, setF] = useState({ name: "", code: "", zone: null, farmer: null, area: "", lat: "", lng: "", soil: "", growing: "field", irrigation: "none", note: "" });
+  const [f, setF] = useState({ name: "", code: "", zone: null, farmer: null, area: "", lat: "", lng: "", soil: "", growing: "field", irrigation: "none", ownership: "owned", status: "active", altitude: "", organic: true, note: "" });
   const [err, setErr] = useState(""), [busy, setBusy] = useState(false), [gps, setGps] = useState(false);
   const set = (k) => (v) => setF((o) => ({ ...o, [k]: v }));
 
@@ -34,6 +36,7 @@ export function PlotForm({ cid, onDone }) {
       company_id: cid, name: f.name.trim(), code: f.code.trim(), zone_id: f.zone, farmer_id: f.farmer,
       area_ha: num(f.area), lat: f.lat ? num(f.lat) : null, lng: f.lng ? num(f.lng) : null,
       soil_type: f.soil, growing: f.growing, irrigation: f.irrigation, note: f.note,
+      ownership: f.ownership, status: f.status, altitude: f.altitude ? Math.round(num(f.altitude)) : null, organic: !!f.organic,
     });
     setBusy(false);
     if (error) { setErr("Nuk u ruajt: " + error.message); return; }
@@ -75,6 +78,21 @@ export function PlotForm({ cid, onDone }) {
 
       <Text style={s.label}>Ujitja</Text>
       <Segmented options={IRRIG} value={f.irrigation} onChange={set("irrigation")} />
+
+      <Text style={s.label}>Pronësia e tokës</Text>
+      <Segmented options={OWN} value={f.ownership} onChange={set("ownership")} />
+      <Text style={s.label}>Statusi (edhe tokë djerr)</Text>
+      <Segmented options={PSTAT} value={f.status} onChange={set("status")} />
+      <View style={{ flexDirection: "row", gap: 10 }}>
+        <View style={{ flex: 1 }}><Field label="Lartësia (m)" value={f.altitude} onChangeText={set("altitude")} keyboardType="number-pad" placeholder="450" /></View>
+        <View style={{ flex: 1 }}>
+          <Text style={s.label}>Organike</Text>
+          <TouchableOpacity onPress={() => set("organic")(!f.organic)} style={[s.input, { flexDirection: "row", alignItems: "center", gap: 8 }]}>
+            <Ionicons name={f.organic ? "checkbox" : "square-outline"} size={20} color={f.organic ? C.ok : C.mute} />
+            <Text style={{ color: C.text }}>{f.organic ? "Po, e certifikuar" : "Jo"}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
 
       <Field label="Shënim" value={f.note} onChangeText={set("note")} multiline placeholder="Çdo detaj i rëndësishëm për këtë tokë" />
       {!!err && <ErrorBox message={err} />}
