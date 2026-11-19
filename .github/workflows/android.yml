@@ -41,7 +41,21 @@ jobs:
         run: CI=1 npx expo prebuild --platform android --no-install
 
       - name: Ndërtimi i APK-së (release)
-        run: cd android && chmod +x gradlew && ./gradlew assembleRelease --no-daemon --stacktrace
+        run: |
+          set -o pipefail
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace 2>&1 | tee /tmp/gradle.log
+
+      # Kur dështon, logu i Gradle publikohet te PR që të lexohet lehtë (logjet e Actions s'mundohen gjithmonë)
+      - name: Publiko logun e dështimit
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tail -c 55000 /tmp/gradle.log > /tmp/tail.log 2>/dev/null || echo "pa log" > /tmp/tail.log
+          { echo "### Logu i ndërtimit (fundi)"; echo '```'; cat /tmp/tail.log; echo '```'; } > /tmp/body.md
+          gh pr comment 1 --body-file /tmp/body.md || true
 
       - name: Përgatitja e skedarit
         run: |
