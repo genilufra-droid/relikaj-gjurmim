@@ -3,6 +3,9 @@ on:
   workflow_dispatch:
   push:
     branches: [main, master]
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   apk:
     runs-on: ubuntu-latest
