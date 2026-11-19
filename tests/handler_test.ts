@@ -19,7 +19,7 @@ const fake = { from(t: string) {
   return c;
 } };
 mkdirSync("/var/tmp/rep2", { recursive: true });
-for (const type of ["summary", "lot", "farmer", "growers", "trace"] as const) for (const format of ["xlsx", "pdf"] as const) {
+for (const type of ["summary", "lot", "farmer", "growers", "trace", "plots", "inputs", "tasks"] as const) for (const format of ["xlsx", "pdf"] as const) {
   const r = await generate(fake, { type, format, company_id: 1, year: 2026, lot_code: "W010F/1a-I-115-26", farmer_id: 1 });
   writeFileSync(`/var/tmp/rep2/${r.filename}`, r.bytes);
   console.log(type, format, r.filename, r.bytes.length);

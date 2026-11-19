@@ -2,10 +2,12 @@
   "expo": {
     "name": "BioBes Farm",
     "slug": "relikaj-gjurmim",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "bundleIdentifier": "al.relikaj.gjurmim",
       "supportsTablet": true,
@@ -17,23 +19,40 @@
     },
     "android": {
       "package": "al.relikaj.gjurmim",
-      "versionCode": 3,
-      "backgroundColor": "#1f4d2e",
+      "versionCode": 4,
+      "backgroundColor": "#14532D",
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
         "CAMERA",
         "READ_MEDIA_IMAGES",
         "INTERNET"
-      ]
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#14532D"
+      }
     },
     "plugins": [
-      ["expo-location", { "locationAlwaysAndWhenInUsePermission": "BioBes Farm përdor vendndodhjen për gjeotagimin e parcelave." }],
-      ["expo-image-picker", { "photosPermission": "BioBes Farm lexon galerinë për fotot e vëzhgimeve.", "cameraPermission": "BioBes Farm përdor kamerën për fotot e vëzhgimeve." }]
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "BioBes Farm përdor vendndodhjen për gjeotagimin e parcelave."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "BioBes Farm lexon galerinë për fotot e vëzhgimeve.",
+          "cameraPermission": "BioBes Farm përdor kamerën për fotot e vëzhgimeve."
+        }
+      ]
     ],
     "splash": {
-      "backgroundColor": "#1f4d2e",
-      "resizeMode": "contain"
-    }
+      "image": "./assets/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#14532D"
+    },
+    "icon": "./assets/icon.png"
   }
 }

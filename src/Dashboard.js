@@ -1,95 +1,147 @@
-// Pasqyra (dashboard) si Cropin: statistika, alarme, moti 5 ditë, detyrat e javës.
+// Pasqyra: KPI, alarme, moti 5-ditor, detyrat dhe vëzhgimet e fundit.
 import React, { useCallback, useEffect, useState } from "react";
-import { ScrollView, Text, View, TouchableOpacity } from "react-native";
+import { RefreshControl, ScrollView, Text, View, TouchableOpacity } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { sb } from "./supabase";
-import { s, C, fmt, today } from "./ui";
+import { s, C, Card, Chip, ErrorBox, Loading, SectionTitle, Stat, fmt, money, dShort, dueLabel } from "./ui";
 
 const WDAY = ["Die", "Hën", "Mar", "Mër", "Enj", "Pre", "Sht"];
+const KIND_LABEL = { pest: "Dëmtues", disease: "Sëmundje", weed: "Barëra", stress: "Stres", damage: "Dëmtim", other: "Tjetër" };
+const wxIcon = (rain, tmax) => (rain >= 5 ? "rainy" : rain >= 0.5 ? "rainy-outline" : tmax >= 30 ? "sunny" : "partly-sunny");
 
-function Stat({ v, t }) {
-  return <View style={[s.card, { flex: 1, minWidth: "45%" }]}><Text style={{ fontSize: 24, fontWeight: "800", color: C.green }}>{v}</Text><Text style={s.mute}>{t}</Text></View>;
-}
+export default function Dashboard({ cid, role, onGo }) {
+  const [st, setSt] = useState(null);
+  const [tasks, setTasks] = useState([]);
+  const [obs, setObs] = useState([]);
+  const [wx, setWx] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
 
-export default function Dashboard({ cid, onGo }) {
-  const [st, setSt] = useState(null), [tasks, setTasks] = useState([]), [obs, setObs] = useState([]);
-  const [wx, setWx] = useState(null), [err, setErr] = useState("");
   const load = useCallback(async () => {
-    setErr("");
+    setLoading(true); setErr("");
     const [{ data: d, error: e1 }, { data: t }, { data: o }] = await Promise.all([
       sb.from("dashboard_stats").select("*").eq("company_id", cid).maybeSingle(),
-      sb.from("tasks").select("id,title,due_date,status,plots(name)").eq("company_id", cid).eq("status", "open").order("due_date").limit(7),
-      sb.from("observations").select("id,kind,severity,date,plots(name)").eq("company_id", cid).eq("resolved", false).order("date", { ascending: false }).limit(5),
+      sb.from("tasks").select("id,title,due_date,status,type,plots(name)").eq("company_id", cid).eq("status", "open").order("due_date").limit(5),
+      sb.from("observations").select("id,kind,severity,date,resolved,plots(name)").eq("company_id", cid).eq("resolved", false).order("date", { ascending: false }).limit(4),
     ]);
-    if (e1) setErr("Statistikat nuk u ngarkuan");
-    setSt(d || null); setTasks(t || []); setObs(o || []);
-    // Moti: Open-Meteo (pa çelës), për koordinatat e Shqipërisë (Durrës si parazgjedhje)
+    if (e1) setErr(e1.message);
+    setSt(d || null); setTasks(t || []); setObs(o || []); setLoading(false);
     try {
       const r = await fetch("https://api.open-meteo.com/v1/forecast?latitude=41.32&longitude=19.45&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,relative_humidity_2m_max,wind_speed_10m_max&timezone=Europe%2FTirane&forecast_days=5");
       const j = await r.json();
-      if (j && j.daily) setWx(j.daily);
-    } catch (_e) { /* moti është shtesë, mos blloko pasqyrën */ }
+      if (j?.daily) setWx(j.daily);
+    } catch (_e) { /* moti është shtesë */ }
   }, [cid]);
+
   useEffect(() => { load(); }, [load]);
-  const t = today();
+
   const alerts = [];
-  if (st && st.tasks_overdue > 0) alerts.push(["bad", `${st.tasks_overdue} detyra të vonuara`, "Shiko te Detyrat"]);
-  if (st && st.observations_open > 0) alerts.push(["warn", `${st.observations_open} vëzhgime të hapura`, "Shiko te Vëzhgimet"]);
-  if (st && st.reminders_overdue > 0) alerts.push(["warn", `${st.reminders_overdue} kujtues të pambyllur`, "Shiko te Detyrat"]);
-  if (wx) {
-    const frost = wx.time.findIndex((d, i) => wx.temperature_2m_min[i] <= 1);
-    if (frost >= 0) alerts.push(["warn", `Rrezik acari më ${wx.time[frost].slice(8)}/${wx.time[frost].slice(5, 7)} (${fmt(wx.temperature_2m_min[frost])}°C)`, "Mbro bimët e ndjeshme"]);
-    const heat = wx.time.findIndex((d, i) => wx.temperature_2m_max[i] >= 35);
-    if (heat >= 0) alerts.push(["warn", `Nxehtësi më ${wx.time[heat].slice(8)}/${wx.time[heat].slice(5, 7)} (${fmt(wx.temperature_2m_max[heat])}°C)`, "Ujit herët në mëngjes"]);
+  if (st) {
+    if (st.tasks_overdue > 0) alerts.push({ tone: "danger", icon: "alarm-outline", title: `${st.tasks_overdue} detyra të vonuara`, text: "Hapni «Detyrat» dhe mbyllini.", go: "detyra" });
+    if (st.observations_open > 0) alerts.push({ tone: "warn", icon: "bug-outline", title: `${st.observations_open} vëzhgime të hapura`, text: "Kontrolloni dëmtuesit dhe sëmundjet.", go: "vezhgime" });
+    if (st.reminders_overdue > 0) alerts.push({ tone: "warn", icon: "notifications-outline", title: `${st.reminders_overdue} kujtues të pambyllur`, text: "Shihni te «Toka».", go: "toka" });
   }
+  if (wx) {
+    const frost = wx.time.findIndex((_, i) => wx.temperature_2m_min[i] <= 1);
+    const heat = wx.time.findIndex((_, i) => wx.temperature_2m_max[i] >= 35);
+    const rain = wx.time.findIndex((_, i) => wx.precipitation_sum[i] >= 20);
+    if (frost >= 0) alerts.push({ tone: "warn", icon: "snow-outline", title: `Rrezik acari — ${dShort(wx.time[frost])}`, text: `Minimumi ${Math.round(wx.temperature_2m_min[frost])}°C. Mbro bimët e ndjeshme.` });
+    if (heat >= 0) alerts.push({ tone: "warn", icon: "thermometer-outline", title: `Nxehtësi — ${dShort(wx.time[heat])}`, text: `${Math.round(wx.temperature_2m_max[heat])}°C. Ujit herët në mëngjes.` });
+    if (rain >= 0) alerts.push({ tone: "info", icon: "rainy-outline", title: `Shi i dendur — ${dShort(wx.time[rain])}`, text: `${Math.round(wx.precipitation_sum[rain])} mm. Shty trajtimet.` });
+  }
+
+  const todayStr = new Date().toLocaleDateString("sq-AL", { day: "numeric", month: "long", year: "numeric" });
+
   return (
-    <ScrollView style={s.screen} contentContainerStyle={s.pad}>
-      <Text style={s.h1}>Pasqyra</Text>
-      {!!err && <Text style={s.err}>{err}</Text>}
+    <ScrollView
+      style={s.screen}
+      contentContainerStyle={s.pad}
+      refreshControl={<RefreshControl refreshing={loading && !!st} onRefresh={load} tintColor={C.brand} />}
+    >
+      <Text style={[s.mute, { marginBottom: 2 }]}>{todayStr}</Text>
+      <Text style={s.h1}>Pasqyra e fermës</Text>
+
+      {!!err && <ErrorBox message={"Statistikat nuk u ngarkuan: " + err} onRetry={load} />}
+      {loading && !st && <Loading text="Po mblidhen të dhënat…" />}
+
       {st && (
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-          <Stat v={fmt(st.area_ha)} t={`hektarë · ${st.plots} parcela`} />
-          <Stat v={st.cultivations_active} t="Kultivime aktive" />
-          <Stat v={st.tasks_open} t={`Detyra të hapura (${st.tasks_overdue} të vonuara)`} />
-          <Stat v={st.observations_open} t="Vëzhgime të hapura" />
-          <Stat v={fmt(st.inputs_year)} t="Inpute këtë vit (lekë)" />
-          <Stat v={fmt(st.purchases_year)} t="Blerje këtë vit (lekë)" />
+        <View style={[s.kpiGrid, { marginTop: 14 }]}>
+          <Stat icon="map-outline" label="Sipërfaqe" value={`${fmt(st.area_ha)} ha`} sub={`${st.plots} parcela`} onPress={() => onGo("parcelat")} />
+          <Stat icon="leaf-outline" label="Kultivime aktive" value={st.cultivations_active} sub="në rritje / vjelje" tone="ok" onPress={() => onGo("kultivimet")} />
+          <Stat icon="checkbox-outline" label="Detyra të hapura" value={st.tasks_open} sub={st.tasks_overdue ? `${st.tasks_overdue} të vonuara` : "asnjë e vonuar"} tone={st.tasks_overdue ? "danger" : "brand"} onPress={() => onGo("detyra")} />
+          <Stat icon="bug-outline" label="Vëzhgime" value={st.observations_open} sub="të pazgjidhura" tone={st.observations_open ? "warn" : "brand"} onPress={() => onGo("vezhgime")} />
+          <Stat icon="nutrition-outline" label="Inpute këtë vit" value={money(st.inputs_year)} sub="plehra, trajtime, punë" tone="info" onPress={() => onGo("inpute")} />
+          <Stat icon="basket-outline" label="Blerje këtë vit" value={money(st.purchases_year)} sub="nga fermerët" onPress={() => onGo("blerje")} />
         </View>
       )}
-      {alerts.length > 0 && <Text style={[s.label, { marginTop: 18 }]}>Alarme</Text>}
-      {alerts.map(([sev, title, text], i) => (
-        <View key={i} style={[s.card, { borderLeftWidth: 4, borderLeftColor: sev === "bad" ? C.red : "#a96a0c" }]}>
-          <Text style={{ fontWeight: "700", color: C.text }}>{title}</Text><Text style={s.mute}>{text}</Text>
-        </View>
-      ))}
-      <Text style={[s.label, { marginTop: 18 }]}>Moti — 5 ditët e ardhshme</Text>
-      {wx ? (
-        <View style={{ flexDirection: "row", gap: 6 }}>
-          {wx.time.map((d, i) => (
-            <View key={d} style={[s.card, { flex: 1, alignItems: "center", padding: 8 }]}>
-              <Text style={s.mute}>{d === t ? "Sot" : WDAY[new Date(d + "T00:00:00Z").getUTCDay()]}</Text>
-              <Text style={{ fontWeight: "800", fontSize: 16, color: C.text }}>{fmt(wx.temperature_2m_max[i])}°</Text>
-              <Text style={s.mute}>{fmt(wx.temperature_2m_min[i])}° · {fmt(wx.precipitation_sum[i])} mm</Text>
+
+      {alerts.length > 0 && <SectionTitle>Alarme</SectionTitle>}
+      {alerts.map((a, i) => (
+        <TouchableOpacity key={i} onPress={() => a.go && onGo(a.go)} activeOpacity={0.85}>
+          <View style={[s.card, { flexDirection: "row", gap: 11, alignItems: "flex-start", borderLeftWidth: 4, borderLeftColor: a.tone === "danger" ? C.red : a.tone === "warn" ? C.warn : C.info }]}>
+            <Ionicons name={a.icon} size={19} color={a.tone === "danger" ? C.red : a.tone === "warn" ? C.warn : C.info} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontWeight: "700", color: C.ink, fontSize: 14 }}>{a.title}</Text>
+              <Text style={s.mute}>{a.text}</Text>
             </View>
-          ))}
-        </View>
-      ) : <Text style={s.mute}>Moti nuk u ngarkua (pa internet?).</Text>}
-      <Text style={[s.label, { marginTop: 18 }]}>Detyrat e ardhshme</Text>
-      {tasks.length === 0 && <Text style={s.mute}>Asnjë detyrë e hapur.</Text>}
-      {tasks.map((x) => (
-        <TouchableOpacity key={x.id} style={s.card} onPress={() => onGo && onGo("detyra")}>
-          <View style={s.row}><Text style={{ fontWeight: "700", color: C.text, flex: 1 }}>{x.title}</Text><Text style={{ color: x.due_date < t ? C.red : C.mute }}>{x.due_date < t ? "e vonuar" : x.due_date}</Text></View>
-          {!!x.plots && <Text style={s.mute}>{x.plots.name}</Text>}
+            {!!a.go && <Ionicons name="chevron-forward" size={16} color={C.mute} />}
+          </View>
         </TouchableOpacity>
       ))}
-      <Text style={[s.label, { marginTop: 18 }]}>Vëzhgimet e fundit</Text>
-      {obs.length === 0 && <Text style={s.mute}>Asnjë vëzhgim i hapur.</Text>}
-      {obs.map((o) => (
-        <View key={o.id} style={s.card}>
-          <View style={s.row}><Text style={{ fontWeight: "700", color: C.text }}>{o.kind}</Text><Text style={s.mute}>{o.date}</Text></View>
-          <Text style={s.mute}>Ashpërsia {o.severity}/3{!!o.plots ? ` · ${o.plots.name}` : ""}</Text>
-        </View>
+
+      <SectionTitle right={<Text style={s.mute}>Durrës</Text>}>Moti — 5 ditë</SectionTitle>
+      {wx ? (
+        <Card>
+          <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+            {wx.time.map((d, i) => (
+              <View key={d} style={{ alignItems: "center", flex: 1 }}>
+                <Text style={[s.mute, { fontSize: 11 }]}>{i === 0 ? "Sot" : WDAY[new Date(d + "T00:00:00Z").getUTCDay()]}</Text>
+                <Ionicons name={wxIcon(wx.precipitation_sum[i], wx.temperature_2m_max[i])} size={22} color={C.brand} style={{ marginVertical: 5 }} />
+                <Text style={{ fontWeight: "800", color: C.ink, fontSize: 14 }}>{Math.round(wx.temperature_2m_max[i])}°</Text>
+                <Text style={[s.mute, { fontSize: 11 }]}>{Math.round(wx.temperature_2m_min[i])}° · {Math.round(wx.precipitation_sum[i])} mm</Text>
+              </View>
+            ))}
+          </View>
+        </Card>
+      ) : <Card><Text style={s.mute}>Moti nuk u ngarkua — kontrolloni internetin.</Text></Card>}
+
+      <SectionTitle right={<TouchableOpacity onPress={() => onGo("detyra")}><Text style={{ color: C.brand, fontWeight: "700", fontSize: 13 }}>Të gjitha</Text></TouchableOpacity>}>Detyrat e ardhshme</SectionTitle>
+      {tasks.length === 0 ? (
+        <Card><Text style={s.mute}>Asnjë detyrë e hapur. Krijoni një detyrë për ujitje, plehërim ose vjelje.</Text></Card>
+      ) : tasks.map((x) => (
+        <TouchableOpacity key={x.id} style={s.card} onPress={() => onGo("detyra")} activeOpacity={0.85}>
+          <View style={s.listRow}>
+            <View style={[s.iconCircle, { backgroundColor: x.due_date < new Date().toISOString().slice(0, 10) ? C.dangerSoft : C.brandSoft }]}>
+              <Ionicons name="calendar-outline" size={18} color={x.due_date < new Date().toISOString().slice(0, 10) ? C.red : C.brand} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontWeight: "700", color: C.ink }} numberOfLines={1}>{x.title}</Text>
+              <Text style={s.mute} numberOfLines={1}>{x.plots?.name ? `${x.plots.name} · ` : ""}{dueLabel(x.due_date)}</Text>
+            </View>
+            <Chip label={dShort(x.due_date)} tone={x.due_date < new Date().toISOString().slice(0, 10) ? "danger" : "neutral"} />
+          </View>
+        </TouchableOpacity>
       ))}
-      <Text style={[s.mute, { marginTop: 18, fontSize: 12 }]}>Moti: Open-Meteo (pa çelës). Koordinatat e parazgjedhura: Durrës.</Text>
+
+      <SectionTitle right={<TouchableOpacity onPress={() => onGo("vezhgime")}><Text style={{ color: C.brand, fontWeight: "700", fontSize: 13 }}>Të gjitha</Text></TouchableOpacity>}>Vëzhgimet e fundit</SectionTitle>
+      {obs.length === 0 ? (
+        <Card><Text style={s.mute}>Asnjë vëzhgim i hapur. Regjistroni dëmtuesit me foto direkt nga fusha.</Text></Card>
+      ) : obs.map((o) => (
+        <TouchableOpacity key={o.id} style={s.card} onPress={() => onGo("vezhgime")} activeOpacity={0.85}>
+          <View style={s.listRow}>
+            <View style={[s.iconCircle, { backgroundColor: o.severity >= 3 ? C.dangerSoft : C.warnSoft }]}>
+              <Ionicons name="bug-outline" size={18} color={o.severity >= 3 ? C.red : C.warn} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontWeight: "700", color: C.ink }}>{KIND_LABEL[o.kind] || o.kind}</Text>
+              <Text style={s.mute} numberOfLines={1}>{o.plots?.name || "Pa parcelë"} · {dShort(o.date)}</Text>
+            </View>
+            <Chip label={`${o.severity}/3`} tone={o.severity >= 3 ? "danger" : o.severity === 2 ? "warn" : "neutral"} />
+          </View>
+        </TouchableOpacity>
+      ))}
+
+      <Text style={[s.mute, { fontSize: 11, marginTop: 20, textAlign: "center" }]}>Moti: Open-Meteo · BioBes Farm</Text>
     </ScrollView>
   );
 }

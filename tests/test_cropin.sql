@@ -87,5 +87,23 @@ do $$ begin
   if (select count(*) from public.plots) <> 1 then raise exception 'grumbulluesi fshiu parcelën'; end if;
 end $$;
 
+
+-- 6. Dokumentet: stafi shkruan, fermeri sheh vetëm të parcelave të veta
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000b');
+do $$ begin
+  insert into public.documents (company_id, plot_id, kind, title, path, url, mime)
+  values (1, 1, 'pdf', 'Kontrata e qirasë', '2026/kontrata.pdf', 'https://example.test/kontrata.pdf', 'application/pdf');
+  insert into public.documents (company_id, kind, title) values (1, 'photo', 'Foto e përgjithshme');
+  if (select count(*) from public.documents_list) <> 2 then raise exception 'documents_list nuk i kthen dokumentet'; end if;
+  begin insert into public.documents (company_id, plot_id, title) values (2, 1, 'X'); raise exception 'duhej të dështonte';
+  exception when raise_exception then if sqlerrm = 'duhej të dështonte' then raise; end if; end;
+end $$;
+
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000c');
+do $$ begin
+  if (select count(*) from public.documents) < 1 then raise exception 'fermeri nuk sheh dokumentet e parcelës së vet'; end if;
+  if (select count(*) from public.documents where plot_id is null) <> 0 then raise exception 'fermeri sheh dokumente pa parcelë'; end if;
+end $$;
+
 rollback;
 select 'TESTET E CROPIN: TË GJITHA KALUAN' as rezultati;

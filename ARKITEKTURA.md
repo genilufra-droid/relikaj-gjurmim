@@ -18,7 +18,9 @@ Projekti Supabase: `relikaj-gjurmim` (ref `xckyafmpzruklibdhxzx`, eu-central-1).
 **Funksionet si Cropin SmartFarm** (zgjerim i BioBes Farm): parcelat me gjeotagim GPS + hartë, kultivimet, detyrat/workflows me afate, vëzhgimet (dëmtues/sëmundje me foto dhe këshillë), inputet/trajtimet, qiratë, pagesat, kujtuesit, dashboard me alarme dhe moti (Open-Meteo, pa çelës), gjurmueshmëri nga parcela te klienti (kartela e gjurmueshmërisë). Moti satelitor dhe SMS bulk mbeten jashtë — duhen shërbime me pagesë.
 
 ## Model të dhënash (faza 1–4)
-`companies` → `members` (roli: admin, staf, grumbullues, fermer) · `farmers`, `zones`, `products`, `warehouses` · `purchases` · `stock_moves` · `customers`, `shipments`, `samples` · `plots` (GPS), `cultivations`, `tasks`, `observations`, `inputs`, `leases`, `payments`, `reminders`. Çdo rresht ka `company_id`; RLS lejon vetëm anëtarët e kompanisë. Administratori i platformës (`platform_admins`) sheh të gjitha. Pamjet: `lot_summary`, `stock_by_lot`, `dashboard_stats`, `plot_summary`, `lease_summary`.
+`companies` → `members` (roli: admin, staf, grumbullues, fermer) · `farmers`, `zones`, `products`, `warehouses` · `purchases` · `stock_moves` · `customers`, `shipments`, `samples` · `plots` (GPS), `cultivations`, `tasks`, `observations`, `inputs`, `leases`, `payments`, `reminders`. Çdo rresht ka `company_id`; RLS lejon vetëm anëtarët e kompanisë. Administratori i platformës (`platform_admins`) sheh të gjitha. Pamjet: `lot_summary`, `stock_by_lot`, `dashboard_stats`, `plot_summary`, `lease_summary`, `documents_list`.
+
+Skedarët: `documents` (foto/PDF/Word/Excel) me `plot_id`, `observation_id`, `input_id`, `task_id`; Storage `field-photos` dhe `field-docs` (bucket publik, shkrim vetëm për të kyçurit).
 
 ## Rregulla kryesore (në trigger)
 - Kodi i lotit: `zona-korrja-produkt-VV`, p.sh. `W010F/1a-I-115-26` (F = Fair Wild, korrja I/II/III, kodi i produktit, viti).
@@ -30,6 +32,8 @@ Projekti Supabase: `relikaj-gjurmim` (ref `xckyafmpzruklibdhxzx`, eu-central-1).
 
 ## Raportet
 Një model i vetëm rrjete qelizash (`types.ts`) vizatohet nga dy shkrues: XLSX (`xlsx.ts`) dhe PDF A4 (`pdf.ts`), që Excel dhe PDF të jenë identikë. Formatet ndjekin Excel-et e BioBes (`defs.ts`).
+
+Të njëjtat skedarë përdoren në dy vende: (a) Edge Function `reports` për gjenerim në server, (b) brenda aplikacionit (`src/reports.js` importon `handler.ts`, `defs.ts`, `xlsx.ts`, `pdf.ts`) që raportet të krijohen në telefon, edhe pa internet, dhe të ndahen direkt me «Share».
 
 ## Statusi
 - Bërë: faza 1 (përdorues, role, blerje, magazinë, raporte), faza 2 (mostra, klientë, dërgesa), faza 3+4 (`0003_cropin.sql`: parcela me GPS, kultivime, detyra, vëzhgime me foto, inpute, qira, pagesa, kujtues, pasqyrë me alarme dhe mot) dhe faza 5 (kartela e gjurmueshmërisë).

@@ -1,13 +1,13 @@
 // Gjeneron raportin nga të dhënat e Supabase (me lejet e përdoruesit, pra RLS vlen) dhe e kthen si Excel ose PDF.
 import { buildXlsx } from "./xlsx.ts";
 import { buildPdf } from "./pdf.ts";
-import { farmerReport, growersReport, lotSheetReport, summaryReport, traceReport } from "./defs.ts";
+import { farmerReport, growersReport, inputsReport, lotSheetReport, plotsReport, summaryReport, tasksReport, traceReport } from "./defs.ts";
 import type { Report } from "./types.ts";
 
 // Pjesa e klientit Supabase që përdorim (lehtëson testimin)
 export interface Sb { from(table: string): any }
 
-export interface Req { type: "summary" | "lot" | "farmer" | "growers" | "trace"; format: "xlsx" | "pdf"; company_id: number; year?: number; lot_code?: string; farmer_id?: number }
+export interface Req { type: "summary" | "lot" | "farmer" | "growers" | "trace" | "plots" | "inputs" | "tasks"; format: "xlsx" | "pdf"; company_id: number; year?: number; lot_code?: string; farmer_id?: number }
 export class ReportError extends Error { constructor(msg: string, public status = 400) { super(msg); } }
 
 const MIME = { xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", pdf: "application/pdf" };
@@ -78,6 +78,29 @@ export async function makeReport(sb: Sb, r: Req): Promise<Report> {
       moves, samples: samples.map((x: any) => ({ date: x.date, customer: x.customers?.name ?? "", code: x.code, tracking: x.shipments?.tracking_no ?? "", result: x.result ?? "" })),
       inputs,
     });
+  }
+  if (r.type === "plots") {
+    const [co] = await q(sb.from("companies").select("name").eq("id", cid));
+    if (!co) throw new ReportError("Kompania nuk u gjet", 404);
+    const rows = await q(sb.from("plot_summary").select("name,code,area_ha,farmer,cultivations,tasks_open,observations_open,inputs_cost").eq("company_id", cid).order("name"));
+    return plotsReport(co.name, year, rows);
+  }
+  if (r.type === "inputs") {
+    const [co] = await q(sb.from("companies").select("name").eq("id", cid));
+    if (!co) throw new ReportError("Kompania nuk u gjet", 404);
+    const all = await q(sb.from("inputs").select("date,category,description,qty,unit,amount,supplier,plots(name)").eq("company_id", cid).order("date").order("id"));
+    const rows = all.filter((x: any) => String(x.date ?? "").startsWith(String(year)));
+    return inputsReport(co.name, year, rows.map((x: any) => ({ ...x, plot: x.plots?.name ?? "" })));
+  }
+  if (r.type === "tasks") {
+    const [co] = await q(sb.from("companies").select("name").eq("id", cid));
+    if (!co) throw new ReportError("Kompania nuk u gjet", 404);
+    const rows = await q(sb.from("tasks").select("title,type,due_date,status,priority,completed_at,plots(name),farmers!tasks_assignee_farmer_id_fkey(first_name,last_name)").eq("company_id", cid).order("due_date"));
+    return tasksReport(co.name, rows.map((x: any) => ({
+      title: x.title, plot: x.plots?.name ?? "", type: x.type, due_date: x.due_date, status: x.status, priority: x.priority,
+      completed_at: x.completed_at ?? null,
+      assignee: x.farmers ? `${x.farmers.first_name} ${x.farmers.last_name}`.trim() : "",
+    })));
   }
   throw new ReportError("Lloji i raportit nuk njihet");
 }

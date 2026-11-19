@@ -1,6 +1,6 @@
 import { buildXlsx } from "../supabase/functions/reports/xlsx.ts";
 import { buildPdf } from "../supabase/functions/reports/pdf.ts";
-import { summaryReport, lotSheetReport, farmerReport, growersReport, traceReport } from "../supabase/functions/reports/defs.ts";
+import { summaryReport, lotSheetReport, farmerReport, growersReport, traceReport, plotsReport, inputsReport, tasksReport } from "../supabase/functions/reports/defs.ts";
 const out = process.argv[2] || "/var/tmp/rep";
 import { mkdirSync, writeFileSync } from "node:fs";
 mkdirSync(out, { recursive: true });
@@ -17,6 +17,18 @@ const reps = [
     { group_name: "GRUPI I", zone_code: "W01/1a", first_name: "MERSIN", last_name: "SINANI", address: "Koprencke", family_size: 4, id_number: "G50307002C" },
     { group_name: "GRUPI I", zone_code: "W01/1a", first_name: "AGRON", last_name: "KACI", address: "Koprencke", family_size: 5, id_number: "G80317002J" },
     { group_name: "GRUPI II", zone_code: "W01/1b", first_name: "JAKE", last_name: "MEMA", address: "Çorovodë", family_size: 5, id_number: "H11005103T" }]),
+  plotsReport("BioBes Mersin Sinani", 2026, [
+    { name: "Parcela te ura e vjetër", code: "K01", area_ha: 2.5, farmer: "Mersin Sinani", cultivations: 1, tasks_open: 2, observations_open: 1, inputs_cost: 187500 },
+    { name: "Serra e re", code: "K02", area_ha: 0.4, farmer: "Agron Kaci", cultivations: 2, tasks_open: 0, observations_open: 0, inputs_cost: 42800 },
+  ]),
+  inputsReport("BioBes Mersin Sinani", 2026, [
+    { date: "2026-03-02", plot: "Parcela te ura e vjetër", category: "fert", description: "Pleh NPK 15-15-15", qty: 50, unit: "kg", amount: 12500, supplier: "AgroVlorë" },
+    { date: "2026-03-20", plot: "Serra e re", category: "labor", description: "Krasitje pranverore", qty: 16, unit: "orë", amount: 9600, supplier: "" },
+  ]),
+  tasksReport("BioBes Mersin Sinani", [
+    { title: "Ujitja e parcelës 1", plot: "Parcela te ura e vjetër", type: "irrigate", assignee: "Mersin Sinani", due_date: "2026-06-05", status: "done", priority: "normal", completed_at: "2026-06-05T08:30:00Z" },
+    { title: "Kontroll dëmtuesish", plot: "Serra e re", type: "scout", assignee: "Agron Kaci", due_date: "2026-06-12", status: "open", priority: "high", completed_at: null },
+  ]),
   traceReport({
     company: "BioBes Mersin Sinani", product: "Mjedër", lot: "W010F/1a-I-115-26", year: 2026,
     purchases: [

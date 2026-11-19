@@ -31,5 +31,10 @@ Klientë, dërgesa DHL dhe protokolli i mostrave (`0002_mostrat.sql`, ekrani «M
 ## Faza 3+4 (si Cropin SmartFarm) — `0003_cropin.sql`
 Parcelat me gjeotagim GPS (koordinata + hartë), kultivimet (mbjellje/vjelje), detyrat në fushë me afate dhe përgjegjës, vëzhgimet (dëmtues/sëmundje me foto dhe këshillë eksperti), inputet dhe trajtime, qiratë e tokës, pagesat dhe kujtuesit. Ekrane të reja: Pasqyra (dashboard + moti Open-Meteo), Parcelat, Kultivimet, Detyrat, Vëzhgimet, Inputet, Toka (qira, pagesa, kujtues). Fotot e fushës ruhen në Storage «field-photos». Zbatimi: ekzekutoni `0003_cropin.sql` në Supabase dhe provoni me `tests/test_cropin.sql`.
 
+## Dizajni dhe dokumentet (v0.2)
+- Ndërfaqe e re profesionale: kryetar me kompaninë/rolin, shirit tab-esh me ikona, kartela KPI, filtra dhe kërkim në çdo listë, gjendje bosh me udhëzim, gabime me «Provo përsëri».
+- **Dokumentet** (`0004_dokumentet.sql`): foto nga kamera ose galeria dhe skedarë PDF/Word/Excel (kontrata, analiza toke, fatura) të lidhura me parcelën; ruhen në Storage `field-docs` / `field-photos`.
+- **Raportet krijohen në telefon** (Excel/PDF me të njëjtin kod si funksioni në server): përmbledhje vjetore, lista e mbledhësve, fletë vjelje, kartelë gjurmueshmërie, **raport parcelash**, **raport inputesh**, **raport detyrash**, përmbledhje fermeri.
+
 ## Faza 5
 Kartela e gjurmueshmërisë (PDF/Excel) për çdo lot: vjelja → magazina → mostrat → inputet. Shembull i gjeneruar: `docs/kartela-gjurmueshmerise-shembull.pdf`. Faturat DHL/FedEx dhe llogaritë e analizave si raporte, import i të dhënave reale, punë pa internet.

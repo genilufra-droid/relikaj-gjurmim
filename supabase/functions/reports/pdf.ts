@@ -25,10 +25,16 @@ function wrapText(text: string, font: PDFFont, size: number, width: number): str
 const text = (c: Cell): string => c.v === null || c.v === "" ? "" : typeof c.v === "number" ? fmtNum(c.v, c.fmt) : c.v;
 export function fmtNum(v: number, fmt?: string): string {
   if (fmt && /d{1,2}\/m{1,2}\/y{2,4}/i.test(fmt)) return String(v);
-  const dec = fmt && fmt.includes(".") ? (fmt.split(".")[1].match(/0/g) || []).length : (Number.isInteger(v) ? 0 : 2);
+  let dec: number, trim = false;
+  if (fmt && fmt.includes(".")) {
+    const part = fmt.split(".")[1].replace(/[^0#]/g, "");
+    dec = part.length; trim = part.includes("#");
+  } else dec = Number.isInteger(v) ? 0 : 2;
   const raw = Math.abs(v).toFixed(dec).split(".");
   const intPart = raw[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");   // pika për mijëshe, presje për dhjetore
-  return (v < 0 ? "-" : "") + intPart + (raw[1] ? "," + raw[1] : "");
+  let frac = raw[1] ?? "";
+  if (trim) frac = frac.replace(/0+$/, "");
+  return (v < 0 ? "-" : "") + intPart + (frac ? "," + frac : "");
 }
 
 export async function buildPdf(rep: Report): Promise<Uint8Array> {
