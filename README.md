@@ -27,4 +27,4 @@ Klientë, dërgesa DHL dhe protokolli i mostrave (`0002_mostrat.sql`, ekrani «M
 Parcelat me gjeotagim GPS (koordinata + hartë), kultivimet (mbjellje/vjelje), detyrat në fushë me afate dhe përgjegjës, vëzhgimet (dëmtues/sëmundje me foto dhe këshillë eksperti), inputet dhe trajtime, qiratë e tokës, pagesat dhe kujtuesit. Ekrane të reja: Pasqyra (dashboard + moti Open-Meteo), Parcelat, Kultivimet, Detyrat, Vëzhgimet, Inputet, Toka (qira, pagesa, kujtues). Fotot e fushës ruhen në Storage «field-photos». Zbatimi: ekzekutoni `0003_cropin.sql` në Supabase dhe provoni me `tests/test_cropin.sql`.
 
 ## Faza 5
-Kartela e gjurmueshmërisë (PDF/Excel) për çdo lot: vjelja → magazina → mostrat → inputet. Faturat DHL/FedEx dhe llogaritë e analizave si raporte, import i të dhënave reale, punë pa internet.
+Kartela e gjurmueshmërisë (PDF/Excel) për çdo lot: vjelja → magazina → mostrat → inputet. Shembull i gjeneruar: `docs/kartela-gjurmueshmerise-shembull.pdf`. Faturat DHL/FedEx dhe llogaritë e analizave si raporte, import i të dhënave reale, punë pa internet.
