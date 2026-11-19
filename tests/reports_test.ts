@@ -1,6 +1,6 @@
 import { buildXlsx } from "../supabase/functions/reports/xlsx.ts";
 import { buildPdf } from "../supabase/functions/reports/pdf.ts";
-import { summaryReport, lotSheetReport, farmerReport, growersReport } from "../supabase/functions/reports/defs.ts";
+import { summaryReport, lotSheetReport, farmerReport, growersReport, traceReport, plotsReport, inputsReport, tasksReport, zonesReport } from "../supabase/functions/reports/defs.ts";
 const out = process.argv[2] || "/var/tmp/rep";
 import { mkdirSync, writeFileSync } from "node:fs";
 mkdirSync(out, { recursive: true });
@@ -17,6 +17,39 @@ const reps = [
     { group_name: "GRUPI I", zone_code: "W01/1a", first_name: "MERSIN", last_name: "SINANI", address: "Koprencke", family_size: 4, id_number: "G50307002C" },
     { group_name: "GRUPI I", zone_code: "W01/1a", first_name: "AGRON", last_name: "KACI", address: "Koprencke", family_size: 5, id_number: "G80317002J" },
     { group_name: "GRUPI II", zone_code: "W01/1b", first_name: "JAKE", last_name: "MEMA", address: "Çorovodë", family_size: 5, id_number: "H11005103T" }]),
+  plotsReport("BioBes Mersin Sinani", 2026, [
+    { name: "Parcela te ura e vjetër", code: "K01", area_ha: 2.5, farmer: "Mersin Sinani", cultivations: 1, tasks_open: 2, observations_open: 1, inputs_cost: 187500 },
+    { name: "Serra e re", code: "K02", area_ha: 0.4, farmer: "Agron Kaci", cultivations: 2, tasks_open: 0, observations_open: 0, inputs_cost: 42800 },
+  ]),
+  inputsReport("BioBes Mersin Sinani", 2026, [
+    { date: "2026-03-02", plot: "Parcela te ura e vjetër", category: "fert", description: "Pleh NPK 15-15-15", qty: 50, unit: "kg", amount: 12500, supplier: "AgroVlorë" },
+    { date: "2026-03-20", plot: "Serra e re", category: "labor", description: "Krasitje pranverore", qty: 16, unit: "orë", amount: 9600, supplier: "" },
+  ]),
+  tasksReport("BioBes Mersin Sinani", [
+    { title: "Ujitja e parcelës 1", plot: "Parcela te ura e vjetër", type: "irrigate", assignee: "Mersin Sinani", due_date: "2026-06-05", status: "done", priority: "normal", completed_at: "2026-06-05T08:30:00Z" },
+    { title: "Kontroll dëmtuesish", plot: "Serra e re", type: "scout", assignee: "Agron Kaci", due_date: "2026-06-12", status: "open", priority: "high", completed_at: null },
+  ]),
+  traceReport({
+    company: "BioBes Mersin Sinani", product: "Mjedër", lot: "W010F/1a-I-115-26", year: 2026,
+    purchases: [
+      { date: "2026-06-06", farmer_name: "Mersin Sinani", zone_code: "W010F/1a", plot: "K01", collector: "Ilir Koçi", qty_fresh: 500, qty_dry: 163, amount: 130400 },
+      { date: "2026-06-14", farmer_name: "Agron Kaci", zone_code: "W010F/1a", plot: "K02", collector: "Ilir Koçi", qty_fresh: 300, qty_dry: 98, amount: 78400 },
+    ],
+    moves: [
+      { date: "2026-06-20", kind: "dorezim", qty_in: 0, qty_out: 261, counterparty: "BioBes", customer: "", document: "DF-12" },
+      { date: "2026-07-31", kind: "eksport", qty_in: 0, qty_out: 261, counterparty: "Warland", customer: "Warland GmbH", document: "EXP-001" },
+    ],
+    batches: [{ code: "B-26-01", date: "2026-06-21", method: "Tharje", input_qty: 261, output_qty: 240, yield_pct: 92, source_lot: "W010F/1a-I-115-26" }],
+    samples: [
+      { date: "2026-06-05", point: "Në parcelë", customer: "", lab: "AlbInspekt", moisture: 11.5, purity: 99.1, passed: true, result: "Pastërtia 99,1%" },
+      { date: "2026-07-02", point: "Në qendër", customer: "Warland", lab: "AlbInspekt", moisture: 10.8, purity: 99.2, passed: true, result: "Pastërtia 99.2%" },
+    ],
+    inputs: [{ date: "2026-03-02", category: "fert", description: "Pleh organik", amount: 25000 }],
+  }),
+  zonesReport("BioBes Mersin Sinani", 2026, [
+    { code: "W010F/1a", name: "Tepelenë – luginë", collector_name: "Ilir Koçi", collection_point: "Pika Tepelenë", region: "Tepelenë", plots: 42, farmers: 31, area_ha: 78.5, fresh_year: 52340, dry_year: 17420, amount_year: 13936000 },
+    { code: "W01/2a", name: "Çorovodë", collector_name: "Arben Memi", collection_point: "Pika Çorovodë", region: "Skrapar", plots: 18, farmers: 14, area_ha: 31.2, fresh_year: 18760, dry_year: 6240, amount_year: 4992000 },
+  ]),
 ];
 for (const r of reps) {
   writeFileSync(`${out}/${r.name}.xlsx`, await buildXlsx(r));

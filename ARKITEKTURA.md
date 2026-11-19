@@ -15,23 +15,31 @@
 
 Projekti Supabase: `relikaj-gjurmim` (ref `xckyafmpzruklibdhxzx`, eu-central-1).
 
-## Model të dhënash (faza 1 dhe 2)
-`companies` → `members` (roli: admin, staf, grumbullues, fermer) · `farmers`, `zones`, `products`, `warehouses` · `purchases` · `stock_moves` · `customers`, `shipments`, `samples`. Çdo rresht ka `company_id`; RLS lejon vetëm anëtarët e kompanisë. Administratori i platformës (`platform_admins`) sheh të gjitha.
+**Funksionet si Cropin SmartFarm** (zgjerim i BioBes Farm): parcelat me gjeotagim GPS + hartë, kultivimet, detyrat/workflows me afate, vëzhgimet (dëmtues/sëmundje me foto dhe këshillë), inputet/trajtimet, qiratë, pagesat, kujtuesit, dashboard me alarme dhe moti (Open-Meteo, pa çelës), gjurmueshmëri nga parcela te klienti (kartela e gjurmueshmërisë). Moti satelitor dhe SMS bulk mbeten jashtë — duhen shërbime me pagesë.
+
+## Model të dhënash (faza 1–4)
+`companies` → `members` (roli: admin, staf, grumbullues, fermer) · `farmers`, `zones`, `products`, `warehouses` · `purchases` · `stock_moves` · `customers`, `shipments`, `samples` · `plots` (GPS), `cultivations`, `tasks`, `observations`, `inputs`, `leases`, `payments`, `reminders`. Çdo rresht ka `company_id`; RLS lejon vetëm anëtarët e kompanisë. Administratori i platformës (`platform_admins`) sheh të gjitha. Pamjet: `lot_summary`, `stock_by_lot`, `dashboard_stats`, `plot_summary`, `lease_summary`, `documents_list`.
+
+Skedarët: `documents` (foto/PDF/Word/Excel) me `plot_id`, `observation_id`, `input_id`, `task_id`; Storage `field-photos` dhe `field-docs` (bucket publik, shkrim vetëm për të kyçurit).
 
 ## Rregulla kryesore (në trigger)
 - Kodi i lotit: `zona-korrja-produkt-VV`, p.sh. `W010F/1a-I-115-26` (F = Fair Wild, korrja I/II/III, kodi i produktit, viti).
 - `amount = round(qty_dry * price, 2)`.
 - Çdo blerje krijon vetë hyrjen në magazinë (`stock_moves.kind = 'blerje'`); hyrjet e tilla nuk futen me dorë.
 - Fermeri sheh vetëm blerjet e veta; mostrat, klientët dhe dërgesat vetëm admin dhe staf.
+- Parcelat: fermeri sheh ato që i janë caktuar (`farmer_id`), detyrat e veta dhe mund t'i mbyllë; mund të raportojë vëzhgime nga parcelat e veta. Inputet, qiratë dhe kujtuesit janë vetëm për staf.
+- Triggerat e `0003` nuk lejojnë lidhje mes kompanive të ndryshme (parcelë↔zonë/fermer, kultivim↔produkt, detyrë/vëzhgim/input↔parcelë).
 
 ## Raportet
 Një model i vetëm rrjete qelizash (`types.ts`) vizatohet nga dy shkrues: XLSX (`xlsx.ts`) dhe PDF A4 (`pdf.ts`), që Excel dhe PDF të jenë identikë. Formatet ndjekin Excel-et e BioBes (`defs.ts`).
 
+Të njëjtat skedarë përdoren në dy vende: (a) Edge Function `reports` për gjenerim në server, (b) brenda aplikacionit (`src/reports.js` importon `handler.ts`, `defs.ts`, `xlsx.ts`, `pdf.ts`) që raportet të krijohen në telefon, edhe pa internet, dhe të ndahen direkt me «Share».
+
 ## Statusi
-- Bërë: faza 1 (përdorues, role, blerje, magazinë, raporte) dhe faza 2 (mostra, klientë, dërgesa).
+- Bërë: faza 1 (përdorues, role, blerje, magazinë, raporte), faza 2 (mostra, klientë, dërgesa), faza 3+4 (`0003_cropin.sql`: parcela me GPS, kultivime, detyra, vëzhgime me foto, inpute, qira, pagesa, kujtues, pasqyrë me alarme dhe mot) dhe faza 5 (kartela e gjurmueshmërisë).
 - Provuar: skema dhe RLS në Postgres lokal; blerje dhe raporte në telefon (Android).
 - Nuk është provuar: iPhone, magazina në telefon, ngarkesa reale.
-- Mbetet: faza 3 (tokë, qira, pagesa, kujtues), faza 4 (shpenzime parcele, trajtime), faza 5 (kartela e gjurmueshmërisë), faturat DHL/FedEx dhe llogaritë e analizave si raporte, import i të dhënave reale, punë pa internet.
+- Mbetet: ekzekutimi i `0003_cropin.sql` dhe `tests/test_cropin.sql` në projektin Supabase; faturat DHL/FedEx dhe llogaritë e analizave si raporte; import i të dhënave reale; punë pa internet; moti satelitor dhe SMS bulk (shërbime me pagesë).
 
 ## Si nisen
 Shih `README.md`.
