@@ -13,7 +13,7 @@ export default function Login() {
   };
   return (
     <KeyboardAvoidingView style={[s.screen, s.pad, { justifyContent: "center" }]} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <Text style={s.h1}>Gjurmim · relikaj.al</Text>
+      <Text style={s.h1}>BioBes Farm</Text>
       <Field label="Emri i përdoruesit ose email" value={u} onChangeText={setU} autoCapitalize="none" autoCorrect={false} />
       <Field label="Fjalëkalimi" value={p} onChangeText={setP} secureTextEntry />
       {!!err && <Text style={s.err}>{err}</Text>}
