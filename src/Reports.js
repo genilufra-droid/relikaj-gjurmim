@@ -25,6 +25,8 @@ export default function Reports({ cid }) {
       <Field label="Fletë vjelje: kodi i lotit" value={lot} onChangeText={setLot} autoCapitalize="characters" />
       <Btn title="Fletë vjelje · Excel" alt disabled={!lot.trim()} busy={busy === "l1"} onPress={run("l1", { type: "lot", format: "xlsx", lot_code: lot.trim() })} />
       <Btn title="Fletë vjelje · PDF" alt disabled={!lot.trim()} busy={busy === "l2"} onPress={run("l2", { type: "lot", format: "pdf", lot_code: lot.trim() })} />
+      <Btn title="Kartela e gjurmueshmërisë · Excel" alt disabled={!lot.trim()} busy={busy === "t1"} onPress={run("t1", { type: "trace", format: "xlsx", lot_code: lot.trim() })} />
+      <Btn title="Kartela e gjurmueshmërisë · PDF" alt disabled={!lot.trim()} busy={busy === "t2"} onPress={run("t2", { type: "trace", format: "pdf", lot_code: lot.trim() })} />
       <Lookup title="Përmbledhje për fermerin" cid={cid} cfg={LOOKUPS.farmer} value={farmer} onChange={setFarmer} />
       <Btn title="Fermeri · Excel" alt disabled={!farmer} busy={busy === "f1"} onPress={run("f1", { type: "farmer", format: "xlsx", farmer_id: farmer, year: Number(year) })} />
       <Btn title="Fermeri · PDF" alt disabled={!farmer} busy={busy === "f2"} onPress={run("f2", { type: "farmer", format: "pdf", farmer_id: farmer, year: Number(year) })} />

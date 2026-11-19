@@ -118,6 +118,69 @@ export function farmerReport(farmer: string, rows: FarmerLot[]): Report {
   return { name: `Fermeri_${safeName(farmer)}`, sheet: farmer, orientation: "portrait", widths, rows: g.rows, merges: g.merges };
 }
 
+// ---- 5. Kartela e gjurmueshmërisë (Faza 5): nga parcela te klienti, për një lot ----
+export interface TracePurchase { date: string; farmer_name: string; zone_code: string; qty_fresh: number; qty_dry: number; amount: number }
+export interface TraceMove { date: string; kind: string; qty_in: number; qty_out: number; counterparty: string }
+export interface TraceSample { date: string; customer: string; code: string; tracking: string; result: string }
+export interface TraceInput { date: string; category: string; description: string; amount: number }
+export function traceReport(o: { company: string; product: string; lot: string; year: number; purchases: TracePurchase[]; moves: TraceMove[]; samples: TraceSample[]; inputs: TraceInput[] }): Report {
+  const widths = [14, 20, 18, 15, 17, 16];
+  const g = new Grid(6);
+  const t1 = g.row(30), t2 = g.row(30);
+  g.merge(t1, 0, t2, 5, { v: "KARTELA E GJURMUESHMËRISË", bold: true, size: 19, align: "c", valign: "m", fill: COLORS.green });
+  const sub = g.row(22);
+  g.merge(sub, 0, sub, 5, { v: `${o.company}  ·  ${o.product}  ·  Loti ${o.lot}  ·  Viti ${o.year}`, size: 11, align: "c", valign: "m" });
+  g.blank(8);
+
+  const c = (v: string | number | null | undefined, x: Partial<Cell> = {}): Cell => {
+    const vv = v ?? "";
+    return { v: vv, size: 11, border: true, valign: "m", wrap: true, fmt: typeof vv === "number" ? NUM : undefined, ...x };
+  };
+  // Rrjetë me 6 kolona; çdo tabelë shpërndan kolonat sipas përmbajtjes (bashkime).
+  const table = (title: string, heads: [string, number][], body: Cell[][]) => {
+    const h = g.row(24);
+    g.merge(h, 0, h, 5, { v: title, bold: true, size: 12, fill: COLORS.grey, valign: "m" });
+    const cols: [number, number][] = [];
+    let x = 0;
+    for (const [, span] of heads) { cols.push([x, x + span - 1]); x += span; }
+    const hr = g.row(28, true);
+    heads.forEach(([label], i) => g.merge(hr, cols[i][0], hr, cols[i][1],
+      { v: label, bold: true, size: 10, align: "c", valign: "m", wrap: true, border: true, fill: COLORS.green }));
+    for (const row of body) {
+      const r = g.row(20);
+      row.forEach((cell, i) => {
+        const [a, b] = cols[i] ?? [5, 5];
+        if (b > a) g.merge(r, a, r, b, cell); else g.set(r, a, cell);
+      });
+    }
+  };
+
+  table("1. VJELJA — fermerët dhe zonat", [["Data", 1], ["Fermeri", 1], ["Zona", 1], ["Njome (kg)", 1], ["Thatë (kg)", 1], ["Shuma (lekë)", 1]], [
+    ...o.purchases.map((p) => [c(dFull(p.date)), c(p.farmer_name), c(p.zone_code), c(num(p.qty_fresh)), c(num(p.qty_dry)), c(num(p.amount))]),
+    [c("Gjithsej", { bold: true, fill: COLORS.grey }), c("", { fill: COLORS.grey }), c("", { fill: COLORS.grey }),
+      c(sum(o.purchases, "qty_fresh"), { bold: true, fill: COLORS.grey }), c(sum(o.purchases, "qty_dry"), { bold: true, fill: COLORS.grey }),
+      c(sum(o.purchases, "amount"), { bold: true, fill: COLORS.grey })],
+  ]);
+
+  table("2. MAGAZINA — dorëzime dhe eksport", [["Data", 1], ["Lloji", 1], ["Hyrje (kg)", 1], ["Dalje (kg)", 1], ["Palë / ku shkoi", 2]],
+    o.moves.length
+      ? o.moves.map((m) => [c(dFull(m.date)), c(m.kind), c(num(m.qty_in)), c(num(m.qty_out)), c(m.counterparty)])
+      : [[c("Asnjë lëvizje magazinë për këtë lot"), c(""), c(""), c(""), c("")]]);
+
+  table("3. MOSTRAT — protokolli i analizave", [["Data", 1], ["Klienti", 1], ["Kodi i mostrës", 1], ["Tracking", 1], ["Rezultati", 2]],
+    o.samples.length
+      ? o.samples.map((s) => [c(dFull(s.date)), c(s.customer), c(s.code, { size: 9 }), c(s.tracking), c(s.result)])
+      : [[c("Asnjë mostër e regjistruar", { valign: "m" }), c(""), c(""), c(""), c("")]]);
+
+  if (o.inputs.length) {
+    table("4. INPUTET — shpenzime parcele dhe trajtime", [["Data", 1], ["Lloji", 1], ["Përshkrimi", 2], ["Shuma (lekë)", 2]],
+      o.inputs.map((i) => [c(dFull(i.date)), c(i.category), c(i.description), c(num(i.amount))]));
+  }
+  const tot = g.row(24);
+  g.merge(tot, 0, tot, 5, { v: `Gjurmueshmëri e plotë: ${o.purchases.length} vjelje · ${o.moves.length} lëvizje magazine · ${o.samples.length} mostra · ${o.inputs.length} inpute`, size: 10, align: "c", valign: "m" });
+  return { name: `Kartela_${safeName(o.lot)}`, sheet: o.lot, orientation: "portrait", widths, rows: g.rows, merges: g.merges };
+}
+
 // ---- 4. Lista e vjelësve (si «LISTA E VJELESVE FAIR WILD») ----
 export interface FarmerRow { group_name: string; zone_code: string; first_name: string; last_name: string; address: string; family_size: number | null; id_number: string }
 export function growersReport(year: number, farmers: FarmerRow[]): Report {

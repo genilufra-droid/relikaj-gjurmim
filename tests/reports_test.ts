@@ -1,6 +1,6 @@
 import { buildXlsx } from "../supabase/functions/reports/xlsx.ts";
 import { buildPdf } from "../supabase/functions/reports/pdf.ts";
-import { summaryReport, lotSheetReport, farmerReport, growersReport } from "../supabase/functions/reports/defs.ts";
+import { summaryReport, lotSheetReport, farmerReport, growersReport, traceReport } from "../supabase/functions/reports/defs.ts";
 const out = process.argv[2] || "/var/tmp/rep";
 import { mkdirSync, writeFileSync } from "node:fs";
 mkdirSync(out, { recursive: true });
@@ -17,6 +17,19 @@ const reps = [
     { group_name: "GRUPI I", zone_code: "W01/1a", first_name: "MERSIN", last_name: "SINANI", address: "Koprencke", family_size: 4, id_number: "G50307002C" },
     { group_name: "GRUPI I", zone_code: "W01/1a", first_name: "AGRON", last_name: "KACI", address: "Koprencke", family_size: 5, id_number: "G80317002J" },
     { group_name: "GRUPI II", zone_code: "W01/1b", first_name: "JAKE", last_name: "MEMA", address: "Çorovodë", family_size: 5, id_number: "H11005103T" }]),
+  traceReport({
+    company: "BioBes Mersin Sinani", product: "Mjedër", lot: "W010F/1a-I-115-26", year: 2026,
+    purchases: [
+      { date: "2026-06-06", farmer_name: "Mersin Sinani", zone_code: "W010F/1a", qty_fresh: 500, qty_dry: 163, amount: 130400 },
+      { date: "2026-06-14", farmer_name: "Agron Kaci", zone_code: "W010F/1a", qty_fresh: 300, qty_dry: 98, amount: 78400 },
+    ],
+    moves: [
+      { date: "2026-06-20", kind: "dorezim", qty_in: 0, qty_out: 261, counterparty: "BioBes" },
+      { date: "2026-07-31", kind: "eksport", qty_in: 0, qty_out: 261, counterparty: "Warland" },
+    ],
+    samples: [{ date: "2026-07-02", customer: "Warland", code: "W010F/1a-I-115-26", tracking: "DHL-123456", result: "Pastërtia 99.2%" }],
+    inputs: [{ date: "2026-03-02", category: "fert", description: "Pleh organik", amount: 25000 }],
+  }),
 ];
 for (const r of reps) {
   writeFileSync(`${out}/${r.name}.xlsx`, await buildXlsx(r));

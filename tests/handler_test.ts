@@ -9,6 +9,8 @@ const T: Record<string, any[]> = {
     { company_id: 1, farmer_id: 1, year: 2026, lot_code: "W010F/1a-I-115-26", date: "2026-06-09", qty_fresh: 40, qty_dry: 10, price: 100, amount: 1000, farmers: { first_name: "Mersin", last_name: "Sinani" }, zones: { code: "W010F/1a" }, products: { name: "Mjedër" } }],
   stock_moves: [{ company_id: 1, lot_code: "W010F/1a-I-115-26", date: "2026-07-21", kind: "dorezim", qty_in: 0, qty_out: 30 }],
   farmers: [{ id: 1, company_id: 1, active: true, first_name: "Mersin", last_name: "Sinani", group_name: "GRUPI I", zone_code: "W01/1a", address: "Koprencke", family_size: 4, id_number: "" }],
+  samples: [{ company_id: 1, code: "W010F/1a-I-115-26", date: "2026-07-02", result: "Pastërtia 99.2%", customers: { name: "Warland" }, shipments: { tracking_no: "DHL-123456" } }],
+  inputs: [{ company_id: 1, lot_code: "W010F/1a-I-115-26", date: "2026-03-02", category: "fert", description: "Pleh organik", amount: 25000 }],
 };
 const fake = { from(t: string) {
   let rows = [...(T[t] ?? [])];
@@ -17,7 +19,7 @@ const fake = { from(t: string) {
   return c;
 } };
 mkdirSync("/var/tmp/rep2", { recursive: true });
-for (const type of ["summary", "lot", "farmer", "growers"] as const) for (const format of ["xlsx", "pdf"] as const) {
+for (const type of ["summary", "lot", "farmer", "growers", "trace"] as const) for (const format of ["xlsx", "pdf"] as const) {
   const r = await generate(fake, { type, format, company_id: 1, year: 2026, lot_code: "W010F/1a-I-115-26", farmer_id: 1 });
   writeFileSync(`/var/tmp/rep2/${r.filename}`, r.bytes);
   console.log(type, format, r.filename, r.bytes.length);
