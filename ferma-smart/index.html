@@ -1,0 +1,854 @@
+<title>Ferma Smart</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+/* Layout: kokë ngjitës me tabelë, përmbajtje 960px; parcelat si hartë pllakash me sipërfaqe në përpjesëtim me hektarët */
+:root{
+  --bg:#f0f4f1;--surface:#ffffff;--surface2:#e7eee9;--fg:#13231a;--muted:#587064;--line:#d5e0d8;
+  --accent:#1c7a4c;--accent-fg:#ffffff;--sky:#25688f;--good:#1c7a4c;--warn:#a96a0c;--bad:#b0392b;
+  --warn-bg:#fbf0dc;--bad-bg:#f9e3df;--info-bg:#e1eef6;--good-bg:#e0f1e7;--tl:84%;--ts:42%;
+  --fd:'Space Grotesk','Segoe UI',system-ui,sans-serif;--fb:'Inter','Segoe UI',system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e1712;--surface:#15211a;--surface2:#1d2c23;--fg:#e4eee7;--muted:#92a89b;--line:#273a2e;
+  --accent:#4cc38a;--accent-fg:#06180e;--sky:#6db6de;--good:#4cc38a;--warn:#e3a44a;--bad:#f08070;
+  --warn-bg:#3a2d12;--bad-bg:#3d1f1b;--info-bg:#17303e;--good-bg:#163325;--tl:26%;--ts:45%;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1712;--surface:#15211a;--surface2:#1d2c23;--fg:#e4eee7;--muted:#92a89b;--line:#273a2e;
+  --accent:#4cc38a;--accent-fg:#06180e;--sky:#6db6de;--good:#4cc38a;--warn:#e3a44a;--bad:#f08070;
+  --warn-bg:#3a2d12;--bad-bg:#3d1f1b;--info-bg:#17303e;--good-bg:#163325;--tl:26%;--ts:45%;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--fb);font-size:14px;line-height:1.45;
+  padding-block:0 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--fd);margin:0;text-wrap:balance;letter-spacing:-.01em}
+h2{font-size:18px}h3{font-size:15px}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:960px;margin:0 auto}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:12px 0;border-bottom:1px solid var(--line)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.brand{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand h1{font-size:22px}
+.brand small{color:var(--muted)}
+.tabs{display:flex;gap:2px;overflow-x:auto;margin-top:8px;scrollbar-width:none}
+.tabs button{flex:0 0 auto;background:none;border:0;border-bottom:3px solid transparent;padding:9px 12px;color:var(--muted);font-weight:500}
+.tabs button[aria-selected="true"]{color:var(--fg);border-color:var(--accent)}
+main{padding-block:18px;display:grid;gap:18px}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr))}
+.two{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))}
+.two>*,.grid>*{min-width:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px}
+.card.flat{background:none;border-style:dashed}
+.sec{display:grid;gap:10px}
+.sec>header{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.muted{color:var(--muted)}.small{font-size:12px}
+.nums{font-variant-numeric:tabular-nums}
+.stat b{display:block;font-family:var(--fd);font-size:24px;line-height:1.1;font-variant-numeric:tabular-nums}
+.stat span{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+.btn{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 12px;font-weight:500}
+.btn:hover{border-color:var(--accent)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.btn.sm{padding:4px 9px;font-size:12px}
+.btn.bad{color:var(--bad)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.chip{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:500;background:var(--surface2);color:var(--muted)}
+.chip.good{background:var(--good-bg);color:var(--good)}.chip.warn{background:var(--warn-bg);color:var(--warn)}
+.chip.bad{background:var(--bad-bg);color:var(--bad)}.chip.info{background:var(--info-bg);color:var(--sky)}
+.alert{display:grid;gap:2px;padding:10px 12px;border-radius:8px;border-left:4px solid var(--sky);background:var(--info-bg)}
+.alert.warn{border-color:var(--warn);background:var(--warn-bg)}.alert.bad{border-color:var(--bad);background:var(--bad-bg)}
+.alert b{font-weight:600}
+.list{display:grid;gap:0}
+.item{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:9px 0;border-top:1px solid var(--line)}
+.item:first-child{border-top:0}
+.item .t{min-width:0;overflow-wrap:anywhere}
+.item.done .t b{text-decoration:line-through;color:var(--muted)}
+.chk{width:22px;height:22px;border-radius:6px;border:2px solid var(--muted);background:none;display:grid;place-items:center;padding:0}
+.chk[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.map{position:relative;width:100%;aspect-ratio:100/62;border-radius:10px;overflow:hidden;background:var(--surface2)}
+.tile{position:absolute;padding:8px;border:2px solid var(--bg);background:hsl(var(--h) 38% var(--tl));text-align:left;overflow:hidden;display:flex;flex-direction:column;gap:2px;border-radius:0}
+.tile b{font-family:var(--fd);font-size:13px;line-height:1.15}
+.tile span{font-size:11px;color:var(--fg);opacity:.8}
+.tile i{position:absolute;right:7px;top:7px;width:10px;height:10px;border-radius:50%;background:var(--good)}
+.tile i.w{background:var(--warn)}.tile i.b{background:var(--bad)}
+.bar{height:8px;border-radius:99px;background:var(--surface2);overflow:hidden}
+.bar>div{height:100%;background:var(--accent);border-radius:99px}
+.wx{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;text-align:center}
+.wx>div{background:var(--surface2);border-radius:8px;padding:8px 2px}
+.wx b{display:block;font-family:var(--fd);font-variant-numeric:tabular-nums}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:7px 8px;border-top:1px solid var(--line);white-space:nowrap}
+th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;border-top:0}
+td.r,th.r{text-align:right}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{background:none;border:0;padding:5px 11px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
+.banner{display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap;background:var(--info-bg);color:var(--fg);border-radius:10px;padding:10px 14px}
+.empty{padding:22px;text-align:center;color:var(--muted)}
+.cb{display:grid;grid-template-columns:110px 1fr auto;gap:8px;align-items:center}
+#modal{position:fixed;inset:0;z-index:20;background:rgba(5,12,8,.55);display:grid;place-items:center;padding:16px}
+#modal[hidden]{display:none!important}
+.dlg{background:var(--surface);border:1px solid var(--line);border-radius:12px;width:min(480px,100%);max-height:92%;overflow:auto;padding:18px;display:grid;gap:12px}
+.fg{display:grid;gap:10px;grid-template-columns:1fr 1fr}
+.fg label{display:grid;gap:3px;font-size:12px;color:var(--muted);min-width:0}
+.fg label.full{grid-column:1/-1}
+.fg input,.fg select,.fg textarea{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 9px;color:var(--fg);font-size:14px;width:100%;min-width:0}
+@media (max-width:460px){.fg{grid-template-columns:1fr}.cb{grid-template-columns:90px 1fr auto}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.paper{background:var(--surface);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.paper.narrow{max-width:780px}
+.ph{display:flex;gap:6px 16px;align-items:center;flex-wrap:wrap;padding:10px 12px;background:var(--good-bg);border-bottom:1px solid var(--line)}
+.ph.col{flex-direction:column;align-items:flex-start}
+.xt{border-collapse:collapse;width:100%}
+.xt th{background:var(--surface2);color:var(--fg);border:1px solid var(--line);text-transform:none;letter-spacing:0;font-size:12px;font-weight:600;white-space:normal;vertical-align:bottom}
+.xt td{border:1px solid var(--line);padding:5px 8px;white-space:nowrap}
+.xt td:has(input,select){padding:0 2px}
+.xt td.wrapc{white-space:normal;min-width:120px}
+.xt tr.tot td{background:var(--surface2);font-weight:600}
+.xc{border:0;background:transparent;width:100%;min-width:84px;padding:7px 5px;border-radius:0;color:inherit}
+.xc.r{text-align:right}
+.xc:focus{outline:2px solid var(--accent);outline-offset:-2px;background:var(--bg)}
+.pickc{border:1px solid var(--line);cursor:pointer}
+.pickc[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+</style>
+<div class="top"><div class="wrap"><div class="brand"><h1>Ferma Smart</h1><small id="status" class="muted"></small></div><div class="tabs" id="tabs" role="tablist"></div></div></div><div class="wrap"><main id="main"></main></div><div id="modal" hidden></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script><script>
+/* ===== Kohë, numra, formatim ===== */
+const MONTHS = ['janar', 'shkurt', 'mars', 'prill', 'maj', 'qershor', 'korrik', 'gusht', 'shtator', 'tetor', 'nëntor', 'dhjetor'];
+const WDAY = ['e diel', 'e hënë', 'e martë', 'e mërkurë', 'e enjte', 'e premte', 'e shtunë'];
+const WDAY_S = ['Die', 'Hën', 'Mar', 'Mër', 'Enj', 'Pre', 'Sht'];
+const pad = n => String(n).padStart(2, '0');
+const isoOf = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+const today = () => isoOf(new Date());
+const utc = s => Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10));
+const addDays = (s, n) => { const t = new Date(utc(s) + n * 864e5); return t.getUTCFullYear() + '-' + pad(t.getUTCMonth() + 1) + '-' + pad(t.getUTCDate()); };
+const diffDays = (a, b) => Math.round((utc(b) - utc(a)) / 864e5);
+const fmtDate = s => s ? s.slice(8, 10) + '.' + s.slice(5, 7) + '.' + s.slice(0, 4) : '';
+const fmtShort = s => s ? s.slice(8, 10) + '.' + s.slice(5, 7) : '';
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+const fmtLong = s => { const t = new Date(utc(s)); return cap(WDAY[t.getUTCDay()]) + ', ' + t.getUTCDate() + ' ' + MONTHS[t.getUTCMonth()] + ' ' + t.getUTCFullYear(); };
+const wdayShort = s => WDAY_S[new Date(utc(s)).getUTCDay()];
+const relDay = (s, t) => { const d = diffDays(t, s); return d === 0 ? 'Sot' : d === 1 ? 'Nesër' : d === -1 ? 'Dje' : d < 0 ? (-d) + ' ditë më parë' : 'pas ' + d + ' ditësh'; };
+
+/* Numra në formën shqipe: pikë për mijëshe, presje për dhjetore */
+const num = (n, maxDec = 0) => {
+  n = +n || 0;
+  let s = Math.abs(n).toFixed(maxDec);
+  if (s.indexOf('.') >= 0) s = s.replace(/0+$/, '').replace(/\.$/, '');
+  const parts = s.split('.');
+  const i = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return (n < 0 && +s !== 0 ? '−' : '') + i + (parts[1] ? ',' + parts[1] : '');
+};
+const fmtL = n => num(n, 0) + ' L';
+const fmtArea = ha => num(ha, 2) + ' ha';
+const fmtDyn = ha => num(ha * 10, 1) + ' dynym';
+const numIn = v => { const x = parseFloat(String(v == null ? '' : v).trim().replace(/\s/g, '').replace(',', '.')); return isNaN(x) ? 0 : x; };
+const sum = (a, f) => a.reduce((s, x) => s + (+f(x) || 0), 0);
+const uid = p => p + Date.now().toString(36).slice(-4) + Math.random().toString(36).slice(2, 5);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const clone = o => JSON.parse(JSON.stringify(o));
+const byDue = (a, b) => a.due < b.due ? -1 : a.due > b.due ? 1 : 0;
+
+/* ===== Skica e parcelave (treemap i shtrydhur) — sipërfaqja e çdo pllake është në përpjesëtim me hektarët ===== */
+function squarify(items, x, y, w, h) {
+  const total = sum(items, i => i.v);
+  if (!total || !items.length) return [];
+  const k = (w * h) / total;
+  const nodes = items.map(i => ({ item: i, a: i.v * k })).sort((a, b) => b.a - a.a);
+  const out = [];
+  let rect = { x: x, y: y, w: w, h: h }, row = [];
+  const worst = (r, side) => {
+    const s = sum(r, n => n.a);
+    let mx = 0, mn = Infinity;
+    r.forEach(n => { mx = Math.max(mx, n.a); mn = Math.min(mn, n.a); });
+    return Math.max(side * side * mx / (s * s), (s * s) / (side * side * mn));
+  };
+  const lay = (r, q) => {
+    const s = sum(r, n => n.a);
+    if (q.w >= q.h) {
+      const cw = s / q.h; let cy = q.y;
+      r.forEach(n => { const ch = n.a / cw; out.push({ x: q.x, y: cy, w: cw, h: ch, item: n.item }); cy += ch; });
+      return { x: q.x + cw, y: q.y, w: q.w - cw, h: q.h };
+    }
+    const rh = s / q.w; let cx = q.x;
+    r.forEach(n => { const cw = n.a / rh; out.push({ x: cx, y: q.y, w: cw, h: rh, item: n.item }); cx += cw; });
+    return { x: q.x, y: q.y + rh, w: q.w, h: q.h - rh };
+  };
+  let i = 0;
+  while (i < nodes.length) {
+    const side = Math.min(rect.w, rect.h), n = nodes[i];
+    if (!row.length || worst(row.concat([n]), side) <= worst(row, side)) { row.push(n); i++; }
+    else { rect = lay(row, rect); row = []; }
+  }
+  if (row.length) lay(row, rect);
+  return out;
+}
+/* ===== Lloje, kultura dhe kalendari agronomik (orientues; duhet verifikuar nga agronomi) ===== */
+const TYPES = { sow: 'Mbjellje', irrigate: 'Ujitje', fertilize: 'Plehërim', protect: 'Mbrojtje bimësh', care: 'Kujdes në fushë', scout: 'Vëzhgim', prune: 'Krasitje', harvest: 'Vjelje', other: 'Tjetër' };
+const SCOUT = { pest: 'Dëmtues', disease: 'Sëmundje', weed: 'Barëra të këqija', stress: 'Mungesë uji ose ushqimi', damage: 'Dëmtim nga moti', other: 'Tjetër' };
+const CATS = { seed: 'Farë dhe fidanë', fert: 'Plehra', pest: 'Pesticide', water: 'Ujitje dhe energji', fuel: 'Karburant', labor: 'Krah pune', machinery: 'Makineri', other: 'Të tjera' };
+const IRRIG = { drip: 'Pika-pika', sprinkler: 'Spërkatje', furrow: 'Brazda', none: 'Pa ujitje' };
+
+const CROPS = {
+  domate: { name: 'Domate', kind: 'annual', cycle: 120,
+    stages: [['Rritje vegjetative', 0, 30], ['Lulëzim', 30, 50], ['Formim frutash', 50, 75], ['Vjelje', 75, 120]],
+    tasks: [[0, 'sow', 'Mbjellja e fidanëve'], [3, 'irrigate', 'Ujitja e parë pas mbjelljes'], [14, 'fertilize', 'Plehërim fillestar sipas analizës së tokës'], [21, 'care', 'Heqja e barërave të këqija'], [30, 'care', 'Vendosja e shtyllave dhe lidhja e bimëve'], [35, 'scout', 'Vëzhgim për mildiu dhe dëmtues'], [50, 'fertilize', 'Plehërim në lulëzim (kalium)'], [60, 'protect', 'Trajtim parandalues kundër sëmundjeve'], [75, 'harvest', 'Fillimi i vjeljes'], [120, 'other', 'Mbyllja e ciklit dhe pastrimi']] },
+  speca: { name: 'Speca', kind: 'annual', cycle: 140,
+    stages: [['Rritje vegjetative', 0, 35], ['Lulëzim', 35, 60], ['Formim frutash', 60, 80], ['Vjelje', 80, 140]],
+    tasks: [[0, 'sow', 'Mbjellja e fidanëve'], [3, 'irrigate', 'Ujitja e parë pas mbjelljes'], [15, 'fertilize', 'Plehërim fillestar'], [25, 'care', 'Heqja e barërave të këqija'], [35, 'scout', 'Vëzhgim për marimangat dhe afidet'], [45, 'fertilize', 'Plehërim në lulëzim'], [60, 'protect', 'Trajtim parandalues sipas këshillës së agronomit'], [80, 'harvest', 'Fillimi i vjeljes'], [140, 'other', 'Mbyllja e ciklit']] },
+  kastravec: { name: 'Kastravec', kind: 'annual', cycle: 80,
+    stages: [['Rritje vegjetative', 0, 20], ['Lulëzim', 20, 35], ['Vjelje', 35, 80]],
+    tasks: [[0, 'sow', 'Mbjellja'], [3, 'irrigate', 'Ujitja e parë'], [10, 'fertilize', 'Plehërim fillestar'], [18, 'care', 'Vendosja e rrjetës mbështetëse'], [25, 'protect', 'Vëzhgim dhe trajtim kundër mildiut të pluhurt'], [35, 'harvest', 'Fillimi i vjeljes'], [80, 'other', 'Mbyllja e ciklit']] },
+  patate: { name: 'Patate', kind: 'annual', cycle: 110,
+    stages: [['Mbirje', 0, 25], ['Rritje vegjetative', 25, 50], ['Formim zhardhokësh', 50, 85], ['Pjekje', 85, 110]],
+    tasks: [[0, 'sow', 'Mbjellja e zhardhokëve'], [20, 'care', 'Heqja e barërave dhe hedhja e dheut'], [30, 'fertilize', 'Plehërim plotësues'], [40, 'scout', 'Vëzhgim për mildiu dhe dëmtues'], [55, 'protect', 'Trajtim parandalues sipas këshillës së agronomit'], [70, 'irrigate', 'Ujitje gjatë formimit të zhardhokëve'], [100, 'other', 'Prerja e majave përpara vjeljes'], [110, 'harvest', 'Vjelja']] },
+  grure: { name: 'Grurë', kind: 'annual', cycle: 235,
+    stages: [['Mbirje', 0, 20], ['Degëzim', 20, 120], ['Zgjatje kërcelli', 120, 170], ['Kallëzim dhe mbushje kokrrash', 170, 215], ['Pjekje', 215, 235]],
+    tasks: [[0, 'sow', 'Mbjellja e grurit'], [25, 'scout', 'Kontroll i mbirjes dhe i barërave të këqija'], [45, 'fertilize', 'Plehërim fillestar sipas analizës'], [100, 'fertilize', 'Plehërim mbulues (azot)'], [110, 'protect', 'Trajtim kundër barërave të këqija'], [150, 'scout', 'Vëzhgim për ndryshk dhe septoria'], [200, 'protect', 'Trajtim kundër sëmundjeve nëse nevojitet'], [232, 'harvest', 'Vjelja (shirja)']] },
+  miser: { name: 'Misër', kind: 'annual', cycle: 140,
+    stages: [['Mbirje', 0, 15], ['Rritje vegjetative', 15, 55], ['Lulëzim', 55, 80], ['Mbushje kokrrash', 80, 120], ['Pjekje', 120, 140]],
+    tasks: [[0, 'sow', 'Mbjellja'], [10, 'care', 'Kontroll i mbirjes'], [20, 'fertilize', 'Plehërim fillestar'], [30, 'care', 'Kultivim dhe heqje barërash'], [45, 'irrigate', 'Ujitje gjatë rritjes'], [60, 'irrigate', 'Ujitje në lulëzim (periudhë kritike)'], [75, 'scout', 'Vëzhgim për krimbin e misrit'], [140, 'harvest', 'Vjelja']] },
+  ulli: { name: 'Ulli', kind: 'perennial',
+    months: [[2, 'prune', 'Krasitja e ullinjve'], [4, 'fertilize', 'Plehërim pranveror'], [5, 'scout', 'Vëzhgim për sëmundje të gjetheve'], [7, 'scout', 'Vëzhgim për mizën e ullirit'], [9, 'irrigate', 'Ujitje plotësuese para vjeljes'], [11, 'harvest', 'Vjelja e ullinjve']],
+    season: ['Pushim', 'Krasitje', 'Çelje sythash', 'Çelje sythash', 'Lulëzim', 'Lidhje frutash', 'Rritje frutash', 'Rritje frutash', 'Pjekje', 'Fillim vjelje', 'Vjelje', 'Vjelje'] },
+  rrush: { name: 'Rrush', kind: 'perennial',
+    months: [[1, 'prune', 'Krasitja dimërore'], [2, 'prune', 'Përfundimi i krasitjes dhe lidhja e shtyllave'], [4, 'scout', 'Vëzhgim për mildiu pas shiut'], [5, 'care', 'Heqja e filizave dhe rregullimi i bimëve'], [6, 'protect', 'Trajtim parandalues kundër oidiumit'], [8, 'scout', 'Kontroll i pjekjes së rrushit'], [9, 'harvest', 'Vjelja e rrushit']],
+    season: ['Pushim dimëror', 'Krasitje', 'Çelje sythash', 'Çelje sythash', 'Rritje e filizave', 'Lulëzim', 'Lidhje frutash', 'Rritje frutash', 'Pjekje', 'Vjelje', 'Pas vjeljes', 'Pushim dimëror'] }
+};
+const SENS_FROST = ['domate', 'speca', 'kastravec', 'patate', 'miser'];
+const SENS_HEAT = ['domate', 'speca', 'kastravec', 'patate', 'miser'];
+const FUNGAL = ['domate', 'speca', 'kastravec', 'patate', 'rrush', 'ulli', 'grure'];
+
+const cropName = k => (CROPS[k] || {}).name || 'Pa kulturë';
+
+function isActive(p, t) {
+  const c = CROPS[p.crop];
+  if (!c || !p.planted) return false;
+  if (c.kind === 'perennial') return true;
+  const d = diffDays(p.planted, t);
+  return d >= 0 && d < c.cycle;
+}
+
+function stageOf(p, t) {
+  const c = CROPS[p.crop];
+  if (!c) return null;
+  if (!p.planted) return { state: 'none', label: 'Pa datë mbjelljeje', pct: 0 };
+  if (c.kind === 'perennial') return { state: 'season', label: c.season[+t.slice(5, 7) - 1], pct: null };
+  const d = diffDays(p.planted, t);
+  if (d < 0) return { state: 'planned', label: 'Mbjellja pas ' + (-d) + ' ditësh', pct: 0, day: d };
+  if (d >= c.cycle) return { state: 'done', label: 'Cikli përfundoi', pct: 1, day: d };
+  const s = c.stages.find(x => d >= x[1] && d < x[2]);
+  return { state: 'growing', label: s ? s[0] : '', pct: d / c.cycle, day: d, left: c.cycle - d };
+}
+
+/* Detyrat nga kalendari i kulturës. Detyrat më të vjetra se 7 ditë nuk krijohen, që të mos mbushet lista me të vonuara. */
+function genTasks(p, t) {
+  const c = CROPS[p.crop];
+  if (!c || !p.planted) return [];
+  const out = [];
+  if (c.kind === 'annual') {
+    c.tasks.forEach((x, i) => {
+      const due = addDays(p.planted, x[0]);
+      if (due >= addDays(t, -7)) out.push({ id: uid('t') + i.toString(36), plotId: p.id, type: x[1], title: x[2], due: due, done: false, auto: true });
+    });
+  } else {
+    const y = +t.slice(0, 4), m = +t.slice(5, 7);
+    c.months.forEach((x, i) => {
+      let due = (x[0] >= m ? y : y + 1) + '-' + pad(x[0]) + '-10';
+      if (due < t) due = t;
+      out.push({ id: uid('t') + i.toString(36), plotId: p.id, type: x[1], title: x[2], due: due, done: false, auto: true });
+    });
+  }
+  return out;
+}
+
+const plotHealth = (S, p) => Math.max(0, ...S.scouting.filter(s => s.plotId === p.id && !s.resolved).map(s => +s.sev || 1));
+const wxIcon = d => (+d.rain >= 1 ? 'rain' : (+d.hum >= 80 ? 'cloud' : 'sun'));
+
+/* ===== Motori i alarmeve: rregulla mbi motin, detyrat dhe vëzhgimet ===== */
+function buildAlerts(S, t) {
+  const out = [];
+  const m = +t.slice(5, 7);
+  const days = ((S.weather && S.weather.days) || []).filter(d => d.date >= t).sort((a, b) => a.date < b.date ? -1 : 1).slice(0, 5)
+    .map(d => ({ date: d.date, tmax: +d.tmax || 0, tmin: +d.tmin || 0, rain: +d.rain || 0, hum: +d.hum || 0, wind: +d.wind || 0 }));
+  const near = days.filter(d => diffDays(t, d.date) <= 2);
+  const live = S.plots.filter(p => isActive(p, t));
+  const field = live.filter(p => p.growing !== 'greenhouse');
+  const ids = a => a.map(p => p.id);
+  const add = (sev, title, text, plotIds, kind) => out.push({ sev: sev, title: title, text: text, plotIds: plotIds || [], kind: kind || 'weather' });
+  const avg = d => (d.tmax + d.tmin) / 2;
+
+  if (days.length) {
+    const fr = days.find(d => d.tmin <= 1), frP = field.filter(p => SENS_FROST.indexOf(p.crop) >= 0);
+    if (fr && frP.length) add(fr.tmin <= -2 ? 'bad' : 'warn', 'Rrezik acari më ' + fmtShort(fr.date), 'Minimalja pritet ' + num(fr.tmin, 1) + '°C. Mbulo bimët e ndjeshme ose shtyje mbjelljen.', ids(frP));
+
+    const ht = days.find(d => d.tmax >= 35), htP = field.filter(p => SENS_HEAT.indexOf(p.crop) >= 0);
+    if (ht && htP.length) add(ht.tmax >= 38 ? 'bad' : 'warn', 'Nxehtësi e lartë më ' + fmtShort(ht.date), 'Maksimalja pritet ' + num(ht.tmax, 0) + '°C. Ujit herët në mëngjes ose në mbrëmje.', ids(htP));
+
+    const wet = near.filter(d => d.hum >= 80 && avg(d) >= 8 && avg(d) <= 26);
+    const fgP = live.filter(p => FUNGAL.indexOf(p.crop) >= 0 && !(p.crop === 'rrush' && (m < 4 || m > 9)));
+    if (wet.length >= 2 && fgP.length) {
+      const rain3 = sum(near, d => d.rain);
+      add(wet.length >= 3 && rain3 >= 10 ? 'bad' : 'warn', 'Rrezik sëmundjesh nga lagështia', 'Lagështi e lartë dhe temperatura të buta në ' + wet.length + ' nga 3 ditët e ardhshme. Kontrollo bimët, ventilo serrat dhe trajto vetëm sipas këshillës së agronomit.', ids(fgP));
+    }
+
+    const dryP = field.filter(p => CROPS[p.crop].kind === 'annual');
+    if (days.length >= 5 && sum(days, d => d.rain) < 2 && Math.max.apply(null, days.map(d => d.tmax)) >= 28 && dryP.length)
+      add('info', 'Pa shi për 5 ditë', 'Planifiko ujitjen për kulturat në rritje.', ids(dryP));
+
+    S.tasks.filter(x => !x.done && x.due >= t && diffDays(t, x.due) <= 3).forEach(x => {
+      const d = days.find(q => q.date === x.due);
+      const p = S.plots.find(q => q.id === x.plotId);
+      if (!d || (p && p.growing === 'greenhouse')) return;
+      const pid = x.plotId ? [x.plotId] : [];
+      if (d.rain >= 10 && ['harvest', 'protect', 'fertilize', 'care'].indexOf(x.type) >= 0)
+        add('warn', 'Shi ' + num(d.rain, 0) + ' mm më ' + fmtShort(d.date), 'Shtyje detyrën «' + x.title + '».', pid);
+      else if (d.wind >= 20 && x.type === 'protect')
+        add('warn', 'Erë ' + num(d.wind, 0) + ' km/h më ' + fmtShort(d.date), 'Mos spërkat. Shtyje «' + x.title + '».', pid);
+      else if (x.type === 'irrigate') {
+        const prev = days.find(q => q.date === addDays(x.due, -1));
+        if (d.rain >= 6 || (prev && prev.rain >= 6)) add('info', 'Ujitja mund të anashkalohet', '«' + x.title + '» më ' + fmtShort(x.due) + ': pritet shi.', pid);
+      }
+    });
+  }
+
+  const late = S.tasks.filter(x => !x.done && x.due < t).sort(byDue);
+  if (late.length) add('warn', late.length + (late.length === 1 ? ' detyrë e vonuar' : ' detyra të vonuara'), 'Më e vjetra: «' + late[0].title + '» (' + fmtShort(late[0].due) + ').', late.map(x => x.plotId).filter((v, i, a) => v && a.indexOf(v) === i), 'task');
+
+  S.scouting.filter(x => !x.resolved && x.sev >= 2).forEach(x =>
+    add(x.sev >= 3 ? 'bad' : 'warn', SCOUT[x.kind] || 'Vëzhgim', (x.text ? x.text + ' · ' : '') + fmtShort(x.date), x.plotId ? [x.plotId] : [], 'scout'));
+
+  const ord = { bad: 0, warn: 1, info: 2 };
+  return out.sort((a, b) => ord[a.sev] - ord[b.sev]);
+}
+
+/* ===== Financat ===== */
+const inPeriod = (date, per, t) => per === 'all' || String(date).slice(0, 4) === t.slice(0, 4);
+function finance(S, per, t) {
+  const ex = S.expenses.filter(e => inPeriod(e.date, per, t));
+  const hv = S.harvests.filter(h => inPeriod(h.date, per, t));
+  const cost = sum(ex, e => e.amount), rev = sum(hv, h => h.qty * h.price);
+  const byCat = {};
+  ex.forEach(e => { byCat[e.cat] = (byCat[e.cat] || 0) + (+e.amount || 0); });
+  const byPlot = S.plots.map(p => {
+    const c = sum(ex.filter(e => e.plotId === p.id), e => e.amount);
+    const r = sum(hv.filter(h => h.plotId === p.id), h => h.qty * h.price);
+    const q = sum(hv.filter(h => h.plotId === p.id), h => h.qty);
+    return { p: p, cost: c, rev: r, qty: q, net: r - c };
+  });
+  const common = sum(ex.filter(e => !S.plots.some(p => p.id === e.plotId)), e => e.amount);
+  const ha = sum(S.plots, p => p.area);
+  return { ex: ex, hv: hv, cost: cost, rev: rev, net: rev - cost, byCat: byCat, byPlot: byPlot, common: common, ha: ha, perHa: ha ? cost / ha : 0 };
+}
+const nextLot = (S, date) => 'L-' + date.slice(0, 4) + '-' + String(S.harvests.filter(h => String(h.date).slice(0, 4) === date.slice(0, 4)).length + 1).padStart(3, '0');
+/* ===== Gjendja, ruajtja, dritaret ===== */
+const LS = 'ferma-smart-v1';
+const T = today();
+let S = null, tab = 'home', per = 'year', tf = 'open', saveState = 'Vetëm në këtë shfletues';
+let dbDoc = null, timer = null, writing = false, again = false;
+
+function seed() {
+  const P = (id, name, crop, area, planted, growing, irrig, note) => ({ id: id, name: name, crop: crop, area: area, planted: planted, growing: growing, irrig: irrig, note: note || '' });
+  const plots = [
+    P('p1', 'Serra 1', 'domate', 0.25, addDays(T, -55), 'greenhouse', 'drip', 'Hibrid me rritje të pakufizuar'),
+    P('p2', 'Ulliri i Shkallës', 'ulli', 1.8, '2018-03-15', 'field', 'none', 'Rreth 220 rrënjë'),
+    P('p3', 'Fusha e Poshtme', 'grure', 3.2, addDays(T, -12), 'field', 'none', ''),
+    P('p4', 'Vreshta', 'rrush', 0.9, '2019-04-01', 'field', 'drip', 'Kallmet'),
+    P('p5', 'Pjesa e re', '', 0.6, '', 'field', 'none', 'Në pushim')
+  ];
+  S = { v: 1, sample: true, farm: 'Ferma ime', plots: plots, tasks: [], scouting: [], expenses: [], harvests: [], weather: { days: [] } };
+  plots.forEach(p => { S.tasks = S.tasks.concat(genTasks(p, T)); });
+  S.tasks.forEach(x => { if (x.due < addDays(T, -2)) x.done = true; });
+  S.scouting = [{ id: 's1', plotId: 'p1', date: addDays(T, -2), kind: 'disease', sev: 2, text: 'Njolla të verdha në gjethet e poshtme', resolved: false },
+    { id: 's2', plotId: 'p3', date: addDays(T, -5), kind: 'weed', sev: 1, text: 'Barëra të këqija në skaj', resolved: true }];
+  S.expenses = [
+    { id: 'e1', date: addDays(T, -50), cat: 'seed', plotId: 'p1', text: 'Fidanë domate', amount: 38000 },
+    { id: 'e2', date: addDays(T, -30), cat: 'fert', plotId: 'p1', text: 'Plehra NPK', amount: 12500 },
+    { id: 'e3', date: addDays(T, -12), cat: 'seed', plotId: 'p3', text: 'Fara gruri 320 kg', amount: 41000 },
+    { id: 'e4', date: addDays(T, -9), cat: 'fuel', plotId: '', text: 'Nafta për traktorin', amount: 18000 },
+    { id: 'e5', date: addDays(T, -4), cat: 'labor', plotId: 'p2', text: 'Punëtorë për vjeljen', amount: 30000 }];
+  S.harvests = [
+    { id: 'h1', date: addDays(T, -6), plotId: 'p2', qty: 640, price: 60, buyer: 'Mulliri Hoti', lot: 'L-' + T.slice(0, 4) + '-001' },
+    { id: 'h2', date: addDays(T, -3), plotId: 'p2', qty: 520, price: 60, buyer: 'Mulliri Hoti', lot: 'L-' + T.slice(0, 4) + '-002' }];
+  const w = [[19, 11, 1, 70, 8], [17, 10, 14, 86, 12], [16, 9, 9, 88, 9], [18, 8, 0, 72, 22], [20, 9, 0, 60, 10]];
+  S.weather.days = w.map((x, i) => ({ date: addDays(T, i), tmax: x[0], tmin: x[1], rain: x[2], hum: x[3], wind: x[4] }));
+}
+
+function load() {
+  try { const r = localStorage.getItem(LS); if (r) S = JSON.parse(r); } catch (e) { S = null; }
+  if (!S || !S.plots) seed();
+}
+function persistLocal() { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) { } }
+
+function save() {
+  persistLocal();
+  clearTimeout(timer);
+  timer = setTimeout(flush, 700);
+}
+async function flush() {
+  if (!dbDoc) return;
+  if (writing) { again = true; return; }
+  writing = true;
+  try { await dbDoc.set({ state: JSON.stringify(S), at: Date.now() }); saveState = 'U ruajt'; }
+  catch (e) { saveState = 'Vetëm në këtë shfletues'; }
+  writing = false;
+  if (again) { again = false; flush(); } else paintStatus();
+}
+async function connect() {
+  try {
+    const cl = window.claude;
+    const db = cl && cl.use ? await cl.use('db') : null;
+    if (!db) return;
+    dbDoc = db.doc('farm/main');
+    const snap = await dbDoc.get();
+    if (snap.exists && snap.data() && snap.data().state) { S = JSON.parse(snap.data().state); persistLocal(); saveState = 'U ruajt'; render(); }
+    else flush();
+  } catch (e) { dbDoc = null; }
+  paintStatus();
+}
+function paintStatus() { const el = document.getElementById('status'); if (el) el.textContent = saveState; }
+
+/* ===== Dritare dhe formularë ===== */
+function openModal(html) {
+  const m = document.getElementById('modal');
+  m.innerHTML = '<div class="dlg" role="dialog" aria-modal="true">' + html + '</div>';
+  m.hidden = false;
+  const f = m.querySelector('input,select,textarea,button'); if (f) f.focus();
+}
+function closeModal() { const m = document.getElementById('modal'); m.hidden = true; m.innerHTML = ''; }
+
+function fieldHtml(f, v) {
+  const val = v == null ? '' : v, id = 'f_' + f.n;
+  let inp;
+  if (f.t === 'select') inp = '<select id="' + id + '" name="' + f.n + '">' + f.opts.map(o => '<option value="' + esc(o[0]) + '"' + (String(o[0]) === String(val) ? ' selected' : '') + '>' + esc(o[1]) + '</option>').join('') + '</select>';
+  else if (f.t === 'textarea') inp = '<textarea id="' + id + '" name="' + f.n + '" rows="2">' + esc(val) + '</textarea>';
+  else inp = '<input id="' + id + '" name="' + f.n + '" type="' + (f.t === 'number' ? 'text' : f.t || 'text') + '"' + (f.t === 'number' ? ' inputmode="decimal"' : '') + ' value="' + esc(val) + '"' + (f.req ? ' required' : '') + '>';
+  return '<label' + (f.full ? ' class="full"' : '') + '>' + esc(f.l) + inp + '</label>';
+}
+function formModal(title, fields, vals, onOk, extra) {
+  openModal('<h2>' + esc(title) + '</h2><form id="mf" class="fg">' + fields.map(f => fieldHtml(f, vals[f.n])).join('') +
+    '<div class="row full" style="grid-column:1/-1;justify-content:flex-end">' + (extra || '') + '<button type="button" class="btn" data-act="close">Anulo</button><button type="submit" class="btn pri">Ruaj</button></div></form>');
+  document.getElementById('mf').addEventListener('submit', e => {
+    e.preventDefault();
+    const o = {};
+    fields.forEach(f => { const el = e.target.elements[f.n]; o[f.n] = f.t === 'number' ? numIn(el.value) : el.value.trim(); });
+    onOk(o); closeModal(); render();
+  });
+}
+function confirmModal(text, onYes) {
+  openModal('<h2>Konfirmo</h2><p>' + esc(text) + '</p><div class="row" style="justify-content:flex-end"><button class="btn" data-act="close">Anulo</button><button class="btn pri" id="yes">Po, fshije</button></div>');
+  document.getElementById('yes').onclick = () => { onYes(); closeModal(); render(); };
+}
+const plotOpts = (blank) => (blank ? [['', blank]] : []).concat(S.plots.map(p => [p.id, p.name]));
+const cropOpts = [['', 'Pa kulturë']].concat(Object.keys(CROPS).map(k => [k, CROPS[k].name]));
+const toOpts = o => Object.keys(o).map(k => [k, o[k]]);
+const plotName = id => { const p = S.plots.find(x => x.id === id); return p ? p.name : 'Të përbashkëta'; };
+/* ===== Pamjet: pasqyra, parcelat ===== */
+const HUE = { domate: 8, speca: 40, kastravec: 130, patate: 32, grure: 50, miser: 66, ulli: 100, rrush: 285, '': 200 };
+const WX_ICON = { sun: '☀', cloud: '☁', rain: '🌧' };
+
+function taskRow(x, showPlot) {
+  const late = !x.done && x.due < T;
+  return '<div class="item' + (x.done ? ' done' : '') + '"><button class="chk" data-act="toggle" data-id="' + x.id + '" aria-pressed="' + x.done + '" aria-label="Shëno si të kryer">' + (x.done ? '✓' : '') + '</button>' +
+    '<div class="t"><b>' + esc(x.title) + '</b><div class="small muted">' + esc(TYPES[x.type] || '') + (showPlot ? ' · ' + esc(plotName(x.plotId)) : '') + '</div></div>' +
+    '<div class="row"><span class="chip ' + (late ? 'bad' : x.due === T ? 'warn' : '') + '">' + (late ? relDay(x.due, T) : x.due === T ? 'Sot' : fmtShort(x.due)) + '</span><button class="btn sm" data-act="edit-task" data-id="' + x.id + '">Ndrysho</button></div></div>';
+}
+
+function viewHome() {
+  const live = S.plots.filter(p => isActive(p, T));
+  const open = S.tasks.filter(x => !x.done);
+  const late = open.filter(x => x.due < T).length;
+  const f = finance(S, 'year', T);
+  const alerts = buildAlerts(S, T);
+  const upcoming = open.filter(x => x.due <= addDays(T, 7)).sort(byDue).slice(0, 7);
+  let h = '';
+  if (S.sample) h += '<div class="banner"><span>Po shihni të dhëna shembull. Ndrysho ose fshi çdo gjë dhe fillo me fermën tënde.</span><button class="btn" data-act="clear-sample">Fshi shembujt</button></div>';
+  h += '<div class="grid">' +
+    '<div class="card stat"><b>' + fmtArea(sum(S.plots, p => p.area)) + '</b><span>' + S.plots.length + ' parcela · ' + fmtDyn(sum(S.plots, p => p.area)) + '</span></div>' +
+    '<div class="card stat"><b>' + live.length + '</b><span>Kultura aktive</span></div>' +
+    '<div class="card stat"><b>' + open.length + '</b><span>Detyra të hapura' + (late ? ' · ' + late + ' të vonuara' : '') + '</span></div>' +
+    '<div class="card stat"><b>' + fmtL(f.net) + '</b><span>Rezultati i vitit ' + T.slice(0, 4) + '</span></div></div>';
+
+  h += '<section class="sec"><header><h2>Alarme</h2><span class="muted small">Nga moti, detyrat dhe vëzhgimet</span></header>';
+  h += alerts.length ? alerts.slice(0, 6).map(a => '<div class="alert ' + a.sev + '"><b>' + esc(a.title) + '</b><span>' + esc(a.text) + '</span>' + (a.plotIds.length ? '<span class="small muted">' + a.plotIds.map(plotName).map(esc).join(', ') + '</span>' : '') + '</div>').join('') :
+    '<div class="card empty">Asnjë alarm. Gjithçka është në rregull.</div>';
+  h += '</section>';
+
+  h += '<div class="two"><section class="sec"><header><h2>Parcelat</h2><button class="btn sm" data-go="plots">Të gjitha</button></header>' + plotMap() + '<span class="small muted">Sipërfaqja e çdo pllake është në përpjesëtim me hektarët.</span></section>';
+  h += '<section class="sec"><header><h2>Moti 5 ditët e ardhshme</h2><button class="btn sm" data-go="weather">Ndrysho</button></header>' + wxStrip() + '<header><h2>Detyrat e javës</h2><button class="btn sm" data-go="tasks">Të gjitha</button></header><div class="card list">' +
+    (upcoming.length ? upcoming.map(x => taskRow(x, true)).join('') : '<div class="empty">Nuk ka detyra për 7 ditët e ardhshme.</div>') + '</div></section></div>';
+  return h;
+}
+
+function wxStrip() {
+  const d = S.weather.days.filter(x => x.date >= T).sort((a, b) => a.date < b.date ? -1 : 1).slice(0, 5);
+  if (!d.length) return '<div class="card empty">Shto parashikimin e motit te skeda «Moti».</div>';
+  return '<div class="wx">' + d.map(x => '<div><span class="small muted">' + (x.date === T ? 'Sot' : wdayShort(x.date)) + '</span><b>' + num(x.tmax) + '°</b><span class="small muted">' + num(x.tmin) + '° · ' + num(x.rain, 1) + ' mm</span><div>' + WX_ICON[wxIcon(x)] + '</div></div>').join('') + '</div>';
+}
+
+function plotMap() {
+  if (!S.plots.length) return '<div class="card empty">Shto parcelën e parë.</div>';
+  const rects = squarify(S.plots.map(p => ({ v: Math.max(p.area, .05), p: p })), 0, 0, 100, 62);
+  return '<div class="map">' + rects.map(r => {
+    const p = r.item.p, st = stageOf(p, T), hl = plotHealth(S, p);
+    return '<button class="tile" data-act="plot" data-id="' + p.id + '" style="--h:' + (HUE[p.crop] != null ? HUE[p.crop] : 200) + ';left:' + r.x + '%;top:' + (r.y / 62 * 100) + '%;width:' + r.w + '%;height:' + (r.h / 62 * 100) + '%">' +
+      '<i class="' + (hl >= 3 ? 'b' : hl === 2 ? 'w' : '') + '"></i><b>' + esc(p.name) + '</b><span>' + esc(cropName(p.crop)) + ' · ' + fmtArea(p.area) + '</span>' + (st ? '<span>' + esc(st.label) + '</span>' : '') + '</button>';
+  }).join('') + '</div>';
+}
+
+function viewPlots() {
+  let h = '<section class="sec"><header><h2>Parcelat</h2><button class="btn pri" data-act="add-plot">Shto parcelë</button></header>' + plotMap() + '</section>';
+  h += '<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))">' + S.plots.map(p => {
+    const st = stageOf(p, T), c = CROPS[p.crop], pend = S.tasks.filter(x => x.plotId === p.id && !x.done).length;
+    const fin = finance(S, 'all', T).byPlot.find(x => x.p.id === p.id);
+    const harvest = c && c.kind === 'annual' && p.planted ? addDays(p.planted, c.cycle) : '';
+    return '<div class="card sec"><header><h3>' + esc(p.name) + '</h3><span class="chip info">' + esc(cropName(p.crop)) + '</span></header>' +
+      '<div class="small muted">' + fmtArea(p.area) + ' · ' + fmtDyn(p.area) + ' · ' + (p.growing === 'greenhouse' ? 'Serë' : 'Fushë e hapur') + ' · ' + esc(IRRIG[p.irrig] || '') + '</div>' +
+      (st ? '<div><div class="row" style="justify-content:space-between"><b>' + esc(st.label) + '</b><span class="small muted">' + (st.pct != null && st.state === 'growing' ? 'Dita ' + st.day + ' nga ' + c.cycle : '') + '</span></div>' + (st.pct != null ? '<div class="bar"><div style="width:' + Math.round(st.pct * 100) + '%"></div></div>' : '') + '</div>' : '<div class="muted">Zgjidh një kulturë për kalendarin dhe alarmet.</div>') +
+      '<div class="small">' + (p.planted ? 'Mbjellë: ' + fmtDate(p.planted) : '') + (harvest ? ' · Vjelja e pritshme: ' + fmtDate(harvest) : '') + '</div>' +
+      '<div class="small muted">' + pend + ' detyra të hapura · Shpenzime ' + fmtL(fin.cost) + ' · Të ardhura ' + fmtL(fin.rev) + '</div>' + (p.note ? '<div class="small muted">' + esc(p.note) + '</div>' : '') +
+      '<div class="row"><button class="btn sm" data-act="edit-plot" data-id="' + p.id + '">Ndrysho</button>' + (c ? '<button class="btn sm" data-act="gen" data-id="' + p.id + '">Detyra nga kalendari</button>' : '') + '<button class="btn sm" data-act="scout-add" data-id="' + p.id + '">Vëzhgim</button></div></div>';
+  }).join('') + '</div>';
+  return h;
+}
+
+const plotFields = () => [
+  { n: 'name', l: 'Emri i parcelës', req: 1, full: 1 }, { n: 'crop', l: 'Kultura', t: 'select', opts: cropOpts },
+  { n: 'area', l: 'Sipërfaqja (hektarë)', t: 'number' }, { n: 'planted', l: 'Data e mbjelljes', t: 'date' },
+  { n: 'growing', l: 'Lloji', t: 'select', opts: [['field', 'Fushë e hapur'], ['greenhouse', 'Serë']] },
+  { n: 'irrig', l: 'Ujitja', t: 'select', opts: toOpts(IRRIG) }, { n: 'note', l: 'Shënim', t: 'textarea', full: 1 }];
+/* ===== Detyra, vëzhgim, financa, moti ===== */
+function viewTasks() {
+  let l = S.tasks.slice().sort(byDue);
+  if (tf === 'open') l = l.filter(x => !x.done); else if (tf === 'done') l = l.filter(x => x.done).reverse();
+  const groups = tf === 'open' ? [['Të vonuara', x => x.due < T], ['Sot', x => x.due === T], ['Këtë javë', x => x.due > T && x.due <= addDays(T, 7)], ['Më vonë', x => x.due > addDays(T, 7)]] : [['', () => true]];
+  let h = '<section class="sec"><header><h2>Detyrat</h2><div class="row"><div class="seg">' + [['open', 'Të hapura'], ['done', 'Të kryera'], ['all', 'Të gjitha']].map(o => '<button data-tf="' + o[0] + '" aria-pressed="' + (tf === o[0]) + '">' + o[1] + '</button>').join('') + '</div><button class="btn pri" data-act="add-task">Shto detyrë</button></div></header>';
+  const used = new Set();
+  groups.forEach(g => {
+    const it = l.filter(x => !used.has(x.id) && g[1](x)); it.forEach(x => used.add(x.id));
+    if (it.length) h += (g[0] ? '<h3 class="muted">' + g[0] + ' (' + it.length + ')</h3>' : '') + '<div class="card list">' + it.map(x => taskRow(x, true)).join('') + '</div>';
+  });
+  return h + (used.size ? '' : '<div class="card empty">Nuk ka detyra këtu.</div>') + '</section>';
+}
+const taskFields = () => [{ n: 'title', l: 'Detyra', req: 1, full: 1 }, { n: 'plotId', l: 'Parcela', t: 'select', opts: plotOpts('Të gjitha') }, { n: 'type', l: 'Lloji', t: 'select', opts: toOpts(TYPES) }, { n: 'due', l: 'Afati', t: 'date', req: 1 }];
+
+function viewScout() {
+  const l = S.scouting.slice().sort((a, b) => a.resolved - b.resolved || (a.date < b.date ? 1 : -1));
+  return '<section class="sec"><header><h2>Vëzhgimet në fushë</h2><button class="btn pri" data-act="scout-add">Shto vëzhgim</button></header><div class="card list">' +
+    (l.length ? l.map(s => '<div class="item' + (s.resolved ? ' done' : '') + '"><span class="chip ' + (s.sev >= 3 ? 'bad' : s.sev === 2 ? 'warn' : 'info') + '">' + ['', 'Ulët', 'Mesatar', 'I lartë'][s.sev] + '</span><div class="t"><b>' + esc(SCOUT[s.kind] || '') + ' · ' + esc(plotName(s.plotId)) + '</b><div class="small muted">' + fmtDate(s.date) + (s.text ? ' · ' + esc(s.text) : '') + '</div></div><div class="row"><button class="btn sm" data-act="resolve" data-id="' + s.id + '">' + (s.resolved ? 'Rihap' : 'Zgjidhur') + '</button><button class="btn sm" data-act="edit-scout" data-id="' + s.id + '">Ndrysho</button></div></div>').join('') : '<div class="empty">Asnjë vëzhgim. Shënoji dëmtuesit, sëmundjet dhe problemet që sheh në fushë.</div>') + '</div></section>';
+}
+const scoutFields = () => [{ n: 'plotId', l: 'Parcela', t: 'select', opts: plotOpts() }, { n: 'kind', l: 'Problemi', t: 'select', opts: toOpts(SCOUT) },
+  { n: 'sev', l: 'Ashpërsia', t: 'select', opts: [[1, 'Ulët'], [2, 'Mesatar'], [3, 'I lartë']] }, { n: 'date', l: 'Data', t: 'date', req: 1 }, { n: 'text', l: 'Përshkrim', t: 'textarea', full: 1 }];
+
+function viewMoney() {
+  const f = finance(S, per, T), cats = Object.keys(f.byCat).sort((a, b) => f.byCat[b] - f.byCat[a]), mx = Math.max.apply(null, [1].concat(cats.map(k => f.byCat[k])));
+  let h = '<section class="sec"><header><h2>Financat</h2><div class="seg">' + [['year', 'Viti ' + T.slice(0, 4)], ['all', 'Të gjitha']].map(o => '<button data-per="' + o[0] + '" aria-pressed="' + (per === o[0]) + '">' + o[1] + '</button>').join('') + '</div></header>' +
+    '<div class="grid"><div class="card stat"><b>' + fmtL(f.rev) + '</b><span>Të ardhura</span></div><div class="card stat"><b>' + fmtL(f.cost) + '</b><span>Shpenzime</span></div><div class="card stat"><b style="color:var(--' + (f.net >= 0 ? 'good' : 'bad') + ')">' + fmtL(f.net) + '</b><span>Rezultati</span></div><div class="card stat"><b>' + fmtL(f.perHa) + '</b><span>Shpenzime për hektar</span></div></div></section>';
+  h += '<div class="two"><section class="sec"><h3>Shpenzimet sipas llojit</h3><div class="card sec">' + (cats.length ? cats.map(k => '<div class="cb"><span>' + esc(CATS[k] || k) + '</span><div class="bar"><div style="width:' + Math.round(f.byCat[k] / mx * 100) + '%"></div></div><span class="nums">' + fmtL(f.byCat[k]) + '</span></div>').join('') : '<div class="empty">Nuk ka shpenzime.</div>') + '</div></section>';
+  h += '<section class="sec"><h3>Sipas parcelës</h3><div class="card tw"><table><tr><th>Parcela</th><th class="r">Prodhim kg</th><th class="r">Shpenzime</th><th class="r">Rezultati</th></tr>' + f.byPlot.map(r => '<tr><td>' + esc(r.p.name) + '</td><td class="r">' + num(r.qty) + '</td><td class="r">' + fmtL(r.cost) + '</td><td class="r" style="color:var(--' + (r.net >= 0 ? 'good' : 'bad') + ')">' + fmtL(r.net) + '</td></tr>').join('') + (f.common ? '<tr><td>Të përbashkëta</td><td class="r"></td><td class="r">' + fmtL(f.common) + '</td><td class="r"></td></tr>' : '') + '</table></div></section></div>';
+  h += '<div class="two"><section class="sec"><header><h3>Shpenzimet</h3><button class="btn pri sm" data-act="add-exp">Shto shpenzim</button></header><div class="card list">' +
+    (f.ex.length ? f.ex.slice().sort((a, b) => a.date < b.date ? 1 : -1).map(e => '<div class="item"><span class="chip">' + esc(CATS[e.cat] || '') + '</span><div class="t"><b>' + esc(e.text || CATS[e.cat]) + '</b><div class="small muted">' + fmtDate(e.date) + ' · ' + esc(plotName(e.plotId)) + '</div></div><div class="row"><b class="nums">' + fmtL(e.amount) + '</b><button class="btn sm" data-act="edit-exp" data-id="' + e.id + '">Ndrysho</button></div></div>').join('') : '<div class="empty">Asnjë shpenzim.</div>') + '</div></section>';
+  h += '<section class="sec"><header><h3>Të korrat dhe shitjet</h3><button class="btn pri sm" data-act="add-hv">Shto të korra</button></header><div class="card list">' +
+    (f.hv.length ? f.hv.slice().sort((a, b) => a.date < b.date ? 1 : -1).map(x => '<div class="item"><span class="chip good">' + esc(x.lot) + '</span><div class="t"><b>' + esc(plotName(x.plotId)) + ' · ' + num(x.qty) + ' kg</b><div class="small muted">' + fmtDate(x.date) + ' · ' + num(x.price, 2) + ' L/kg' + (x.buyer ? ' · ' + esc(x.buyer) : '') + '</div></div><div class="row"><b class="nums">' + fmtL(x.qty * x.price) + '</b><button class="btn sm" data-act="edit-hv" data-id="' + x.id + '">Ndrysho</button></div></div>').join('') : '<div class="empty">Asnjë e korrë e regjistruar.</div>') + '</div><span class="small muted">Kodi i lotit lidh çdo të korrë me parcelën dhe datën, për gjurmueshmëri deri te blerësi.</span></section></div>';
+  return h;
+}
+const expFields = () => [{ n: 'text', l: 'Përshkrim', req: 1, full: 1 }, { n: 'cat', l: 'Lloji', t: 'select', opts: toOpts(CATS) }, { n: 'plotId', l: 'Parcela', t: 'select', opts: plotOpts('Të përbashkëta') }, { n: 'amount', l: 'Shuma (Lekë)', t: 'number' }, { n: 'date', l: 'Data', t: 'date', req: 1 }];
+const hvFields = () => [{ n: 'plotId', l: 'Parcela', t: 'select', opts: plotOpts() }, { n: 'date', l: 'Data', t: 'date', req: 1 }, { n: 'qty', l: 'Sasia (kg)', t: 'number' }, { n: 'price', l: 'Çmimi (Lekë/kg)', t: 'number' }, { n: 'buyer', l: 'Blerësi', full: 1 }];
+
+function viewWeather() {
+  const d = S.weather.days.slice().sort((a, b) => a.date < b.date ? -1 : 1);
+  return '<section class="sec"><header><h2>Moti</h2><button class="btn pri" data-act="add-wx">Shto ditë</button></header><p class="muted" style="margin:0">Aplikacioni nuk lidhet me shërbim moti. Shkruaj parashikimin nga stacioni yt ose nga burimi që ndjek, dhe alarmet llogariten nga ky tabelë.</p><div class="card tw"><table><tr><th>Data</th><th class="r">Max °C</th><th class="r">Min °C</th><th class="r">Shi mm</th><th class="r">Lagështia %</th><th class="r">Era km/h</th><th></th></tr>' +
+    (d.length ? d.map(x => '<tr><td>' + esc(wdayShort(x.date)) + ' ' + fmtDate(x.date) + '</td><td class="r">' + num(x.tmax, 1) + '</td><td class="r">' + num(x.tmin, 1) + '</td><td class="r">' + num(x.rain, 1) + '</td><td class="r">' + num(x.hum) + '</td><td class="r">' + num(x.wind) + '</td><td><button class="btn sm" data-act="edit-wx" data-id="' + x.date + '">Ndrysho</button></td></tr>').join('') : '<tr><td colspan="7" class="empty">Asnjë ditë.</td></tr>') + '</table></div></section>';
+}
+const wxFields = () => [{ n: 'date', l: 'Data', t: 'date', req: 1 }, { n: 'tmax', l: 'Maksimalja °C', t: 'number' }, { n: 'tmin', l: 'Minimalja °C', t: 'number' }, { n: 'rain', l: 'Shi (mm)', t: 'number' }, { n: 'hum', l: 'Lagështia (%)', t: 'number' }, { n: 'wind', l: 'Era (km/h)', t: 'number' }];
+/* ===== Pamja kryesore, veprimet, nisja ===== */
+const TABS = [['home', 'Pasqyra'], ['plots', 'Parcelat'], ['tasks', 'Detyrat'], ['scout', 'Vëzhgim'], ['money', 'Financat'], ['weather', 'Moti']];
+const VIEWS = { home: viewHome, plots: viewPlots, tasks: viewTasks, scout: viewScout, money: viewMoney, weather: viewWeather };
+const COLL = { task: () => S.tasks, plot: () => S.plots, scout: () => S.scouting, exp: () => S.expenses, hv: () => S.harvests, wx: () => S.weather.days };
+const keyOf = (k, r) => k === 'wx' ? r.date : r.id;
+const find = (k, id) => COLL[k]().find(r => keyOf(k, r) === id);
+const delBtn = (k, id) => '<button type="button" class="btn bad" style="margin-right:auto" data-act="del" data-k="' + k + '" data-id="' + esc(id) + '">Fshi</button>';
+
+function render() {
+  document.getElementById('tabs').innerHTML = TABS.map(t => '<button role="tab" data-tab="' + t[0] + '" aria-selected="' + (tab === t[0]) + '">' + t[1] + '</button>').join('');
+  document.getElementById('main').innerHTML = VIEWS[tab]();
+  paintStatus();
+}
+function go(t) { tab = t; render(); window.scrollTo(0, 0); }
+
+/* Shton ose ndryshon një rekord; id e re krijohet vetëm kur mungon */
+function edit(kind, fields, vals, title, after) {
+  const cur = vals && vals._r;
+  formModal(title, fields, vals, o => {
+    if (o.sev != null) o.sev = +o.sev;
+    if (cur) Object.assign(cur, o); else { const r = Object.assign({ id: uid(kind[0]) }, o); COLL[kind]().push(r); if (after) after(r); }
+    save();
+  }, cur ? delBtn(kind, keyOf(kind, cur)) : '');
+}
+const withRec = (kind, id, extra) => { const r = find(kind, id); return Object.assign({}, r, { _r: r }, extra); };
+
+function act(a, el) {
+  const id = el.dataset.id;
+  switch (a) {
+    case 'close': closeModal(); break;
+    case 'toggle': { const x = find('task', id); if (x) { x.done = !x.done; save(); render(); } break; }
+    case 'add-task': edit('task', taskFields(), { due: T, type: 'other', plotId: '' }, 'Detyrë e re'); break;
+    case 'edit-task': edit('task', taskFields(), withRec('task', id), 'Ndrysho detyrën'); break;
+    case 'add-plot': edit('plot', plotFields(), { area: 1, growing: 'field', irrig: 'none', crop: '' }, 'Parcelë e re', p => { S.tasks = S.tasks.concat(genTasks(p, T)); }); break;
+    case 'plot': case 'edit-plot': edit('plot', plotFields(), withRec('plot', id), 'Ndrysho parcelën'); break;
+    case 'gen': {
+      const p = find('plot', id), add = genTasks(p, T).filter(n => !S.tasks.some(x => x.plotId === id && x.title === n.title && x.due === n.due));
+      S.tasks = S.tasks.concat(add); save(); tab = 'tasks'; tf = 'open'; render(); break;
+    }
+    case 'scout-add': edit('scout', scoutFields(), { plotId: id || (S.plots[0] || {}).id || '', kind: 'pest', sev: 1, date: T, text: '', resolved: false }, 'Vëzhgim i ri'); break;
+    case 'edit-scout': edit('scout', scoutFields(), withRec('scout', id), 'Ndrysho vëzhgimin'); break;
+    case 'resolve': { const s = find('scout', id); s.resolved = !s.resolved; save(); render(); break; }
+    case 'add-exp': edit('exp', expFields(), { date: T, cat: 'other', plotId: '', amount: 0 }, 'Shpenzim i ri'); break;
+    case 'edit-exp': edit('exp', expFields(), withRec('exp', id), 'Ndrysho shpenzimin'); break;
+    case 'add-hv': edit('hv', hvFields(), { date: T, plotId: (S.plots[0] || {}).id || '', qty: 0, price: 0 }, 'Të korra të reja', r => { r.lot = nextLot(S, r.date); }); break;
+    case 'edit-hv': edit('hv', hvFields(), withRec('hv', id), 'Ndrysho të korrën'); break;
+    case 'add-wx': edit('wx', wxFields(), { date: addDays(S.weather.days.reduce((m, d) => d.date > m ? d.date : m, addDays(T, -1)), 1), tmax: 20, tmin: 10, rain: 0, hum: 60, wind: 8 }, 'Ditë e re'); break;
+    case 'edit-wx': {
+      const r = S.weather.days.find(x => x.date === id);
+      formModal('Ndrysho motin', wxFields(), r, o => { Object.assign(r, o); save(); }, delBtn('wx', id)); break;
+    }
+    case 'del': {
+      const k = el.dataset.k, r = find(k, id), list = COLL[k]();
+      confirmModal('Ta fshij këtë rekord?', () => { list.splice(list.indexOf(r), 1); save(); });
+      break;
+    }
+    case 'clear-sample':
+      confirmModal('Do të fshihen të gjitha të dhënat shembull. Fillon me fermë të zbrazët.', () => { S.sample = false; S.plots = []; S.tasks = []; S.scouting = []; S.expenses = []; S.harvests = []; S.weather = { days: [] }; save(); });
+      break;
+  }
+}
+
+document.addEventListener('click', e => {
+  if (e.target.id === 'modal') return closeModal();
+  const el = e.target.closest('[data-act],[data-go],[data-tf],[data-per],[data-tab],[data-pick]');
+  if (!el) return;
+  if (el.dataset.pick) bioPick(el);
+  else if (el.dataset.act) { if (!bioAct(el.dataset.act, el)) act(el.dataset.act, el); }
+  else if (el.dataset.go) go(el.dataset.go);
+  else if (el.dataset.tab) go(el.dataset.tab);
+  else if (el.dataset.tf) { tf = el.dataset.tf; render(); }
+  else if (el.dataset.per) { per = el.dataset.per; render(); }
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+/* ===== BioBes: modulet nga Excel-et (plani i qarkullimit, kultivime, fletë vjelje, magazinë, kartela) ===== */
+const YEARS = [2022, 2023, 2024, 2025, 2026, 2027, 2028];
+let DL = null, curSheet = '', curStore = '', curCard = '';
+const BIO_KEYS = ['rp', 'rot', 'cult', 'sheets', 'stores', 'cards'];
+function ensureBio() { S.bio = S.bio || {}; BIO_KEYS.forEach(k => { S.bio[k] = S.bio[k] || []; }); }
+COLL.rp = () => { ensureBio(); return S.bio.rp; };
+COLL.rot = () => { ensureBio(); return S.bio.rot; };
+COLL.cult = () => { ensureBio(); return S.bio.cult; };
+COLL.sheets = () => { ensureBio(); return S.bio.sheets; };
+COLL.stores = () => { ensureBio(); return S.bio.stores; };
+COLL.cards = () => { ensureBio(); return S.bio.cards; };
+
+/* Fushë inline si qeliza Excel: ruhet kur del nga fusha */
+const cell = (bk, id, i, f, v, t) => '<input class="xc' + (t === 'n' ? ' r' : '') + '" data-bk="' + bk + '" data-id="' + esc(id) + '" data-i="' + i + '" data-f="' + f + '" data-t="' + (t || 't') + '" type="' + (t === 'd' ? 'date' : 'text') + '"' + (t === 'n' ? ' inputmode="decimal"' : '') + ' value="' + esc(v == null ? '' : (t === 'n' && v === 0 ? '' : v)) + '">';
+const pdfBtn = (k) => DL ? '<button class="btn" data-act="pdf" data-k="' + k + '">Shkarko PDF A4</button>' : '';
+const tabHead = (title, orient, extra) => '<header><div><h2>' + title + '</h2><span class="small muted">Format printimi: A4 ' + orient + '</span></div><div class="row">' + (extra || '') + '</div></header>';
+const norm = s => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+const rowsOf = (d) => d.rows || [];
+
+/* ---- Plani i qarkullimit ---- */
+const rpFields = () => [{ n: 'code', l: 'Kodi i parcelës (p.sh. K02)', req: 1 }, { n: 'total', l: 'Sipërfaqja totale (m²)', t: 'number' }, { n: 'address', l: 'Adresa', full: 1 }];
+const rotFields = () => [{ n: 'parcel', l: 'Parcela', t: 'select', opts: S.bio.rp.map(p => [p.code, p.code]) }, { n: 'sub', l: 'Nënparcela (p.sh. K02/1)', req: 1 }, { n: 'm2', l: 'Sipërfaqja (m²)', t: 'number' }]
+  .concat(YEARS.map(y => ({ n: 'y' + y, l: 'Kultura ' + y, full: 1 })));
+
+function viewRot() {
+  ensureBio();
+  let h = '<section class="sec">' + tabHead('Plani i qarkullimit ' + YEARS[0] + '–' + YEARS[YEARS.length - 1], 'horizontal', pdfBtn('rot') + '<button class="btn" data-act="add-rot">Shto nënparcelë</button><button class="btn pri" data-act="add-rp">Shto parcelë</button>') + '</section>';
+  if (!S.bio.rp.length) return h + '<div class="card empty">Shto parcelën e parë me kod (p.sh. K01) dhe adresë, pastaj nënparcelat me kulturat për çdo vit.</div>';
+  S.bio.rp.forEach(p => {
+    const rows = S.bio.rot.filter(r => r.parcel === p.code);
+    h += '<div class="paper"><div class="ph"><b>PARCELA: ' + esc(p.code) + '</b><span>ADRESA: ' + esc(p.address) + '</span><span>SIP TOTALE ' + num(p.total) + ' m²</span><button class="btn sm" data-act="edit-rp" data-id="' + p.id + '">Ndrysho</button></div><div class="tw"><table class="xt"><tr><th>Nënparcela</th><th class="r">m²</th>' + YEARS.map(y => '<th>' + y + '</th>').join('') + '<th></th></tr>' +
+      (rows.length ? rows.map(r => '<tr><td>' + esc(r.sub) + '</td><td class="r">' + num(r.m2) + '</td>' + YEARS.map(y => '<td class="wrapc">' + esc(r['y' + y] || '') + '</td>').join('') + '<td><button class="btn sm" data-act="edit-rot" data-id="' + r.id + '">Ndrysho</button></td></tr>').join('') : '<tr><td colspan="' + (YEARS.length + 3) + '" class="muted">Asnjë nënparcelë.</td></tr>') + '</table></div></div>';
+  });
+  return h;
+}
+
+/* ---- Kultivime (përmbledhja) ---- */
+const cultFields = () => [{ n: 'parcel', l: 'Parcela (p.sh. K02/1)', req: 1 }, { n: 'product', l: 'Produkti', req: 1 }, { n: 'approved', l: 'Sasi e miratuar (kg)', t: 'number' }, { n: 'exported', l: 'Sasi e eksportuar (kg)', t: 'number' },
+  { n: 'start', l: 'Data e fillimit të vjeljes', full: 1 }, { n: 'end', l: 'Data e mbarimit të vjeljes', full: 1 }, { n: 'stock', l: 'Stoku (kg)', t: 'number' }, { n: 'comment', l: 'Komente', full: 1 }];
+function sheetTotals(c) {
+  const m = S.bio.sheets.filter(s => norm(s.parcel) === norm(c.parcel) && norm(s.product) === norm(c.product));
+  return { has: m.length > 0, fresh: sum(m, s => sum(rowsOf(s), r => r.fresh)), dry: sum(m, s => sum(rowsOf(s), r => r.dry)) };
+}
+function viewCult() {
+  ensureBio();
+  const rows = S.bio.cult, tot = rows.map(sheetTotals);
+  return '<section class="sec">' + tabHead('Kultivime BioBes ' + T.slice(0, 4), 'horizontal', pdfBtn('cult') + '<button class="btn pri" data-act="add-cult">Shto rresht</button>') +
+    '<div class="paper"><div class="tw"><table class="xt"><tr><th>Parcela</th><th>Produkti</th><th class="r">Sasi e miratuar</th><th>Dt e fillimit të vjeljes</th><th>Dt e mbarimit të vjeljes</th><th class="r">Mbledhur njomë</th><th class="r">Mbledhur thatë</th><th class="r">Eksportuar</th><th class="r">Stoku</th><th>Komente</th><th></th></tr>' +
+    (rows.length ? rows.map((c, i) => '<tr><td>' + esc(c.parcel) + '</td><td>' + esc(c.product) + '</td><td class="r">' + num(c.approved) + '</td><td>' + esc(c.start) + '</td><td>' + esc(c.end) + '</td><td class="r">' + (tot[i].has ? num(tot[i].fresh) : '') + '</td><td class="r">' + (tot[i].has ? num(tot[i].dry) : '') + '</td><td class="r">' + num(c.exported) + '</td><td class="r">' + num(c.stock) + '</td><td class="wrapc">' + esc(c.comment) + '</td><td><button class="btn sm" data-act="edit-cult" data-id="' + c.id + '">Ndrysho</button></td></tr>').join('') +
+      '<tr class="tot"><td colspan="2">Gjithsej</td><td class="r">' + num(sum(rows, c => c.approved)) + '</td><td></td><td></td><td class="r">' + num(sum(tot, x => x.fresh)) + '</td><td class="r">' + num(sum(tot, x => x.dry)) + '</td><td class="r">' + num(sum(rows, c => c.exported)) + '</td><td class="r">' + num(sum(rows, c => c.stock)) + '</td><td colspan="2"></td></tr>' : '<tr><td colspan="11" class="muted">Asnjë rresht. Shto parcelën dhe produktin; sasitë e mbledhura merren automatikisht nga fletët e vjeljes me të njëjtën parcelë dhe produkt.</td></tr>') + '</table></div></div></section>';
+}
+
+/* ---- Fletët e vjeljes ---- */
+const sheetFields = () => [{ n: 'product', l: 'Produkti', req: 1, full: 1 }, { n: 'parcel', l: 'Parcela (p.sh. K02/1)', req: 1 }, { n: 'approved', l: 'Sasia e miratuar (kg)', t: 'number' }, { n: 'report', l: 'Raporti (p.sh. 4/1)', full: 1 }];
+function picker(list, cur, lab, act) {
+  return '<div class="row">' + list.map(x => '<button class="chip pickc" data-pick="' + act + '" data-id="' + x.id + '" aria-pressed="' + (x.id === cur) + '">' + esc(lab(x)) + '</button>').join('') + '</div>';
+}
+function viewSheets() {
+  ensureBio();
+  const L = S.bio.sheets; if (!L.find(s => s.id === curSheet)) curSheet = L.length ? L[0].id : '';
+  const s = L.find(x => x.id === curSheet);
+  let h = '<section class="sec">' + tabHead('Fleta e vjeljes', 'vertikal', (s ? pdfBtn('sheet') : '') + '<button class="btn pri" data-act="add-sheet">Fletë e re</button>');
+  h += L.length ? picker(L, curSheet, x => x.parcel + ' · ' + x.product, 'sheet') : '<div class="card empty">Shto fletën e parë për një parcelë dhe produkt. Çdo ditë vjelje futet si rresht: data dhe sasia e njomë, data dhe sasia e thatë.</div>';
+  if (s) {
+    const fr = sum(rowsOf(s), r => r.fresh), dr = sum(rowsOf(s), r => r.dry);
+    h += '<div class="paper narrow"><div class="ph col"><b>PRODUKTI : ' + esc(s.product) + '</b><span>PARCELA : ' + esc(s.parcel) + '</span><span>SASIA E MIRATUAR : ' + num(s.approved) + ' KG</span><span>RAPORTI : ' + esc(s.report) + '</span><span><button class="btn sm" data-act="edit-sheet" data-id="' + s.id + '">Ndrysho kokën</button></span></div>' +
+      '<div class="tw"><table class="xt"><tr><th>Data</th><th class="r">Sasi e njomë (kg)</th><th>Data</th><th class="r">Sasi e thatë (kg)</th><th></th></tr>' +
+      s.rows.map((r, i) => '<tr><td>' + cell('sheets', s.id, i, 'd1', r.d1, 'd') + '</td><td>' + cell('sheets', s.id, i, 'fresh', r.fresh, 'n') + '</td><td>' + cell('sheets', s.id, i, 'd2', r.d2, 'd') + '</td><td>' + cell('sheets', s.id, i, 'dry', r.dry, 'n') + '</td><td><button class="btn sm" data-act="bio-delrow" data-bk="sheets" data-id="' + s.id + '" data-i="' + i + '" aria-label="Fshi rreshtin">✕</button></td></tr>').join('') +
+      '<tr class="tot"><td>Gjithsej</td><td class="r">' + num(fr) + '</td><td></td><td class="r">' + num(dr) + '</td><td></td></tr></table></div><div class="row" style="padding:8px"><button class="btn sm" data-act="bio-addrow" data-bk="sheets" data-id="' + s.id + '">Shto rresht</button></div></div>';
+  }
+  return h + '</section>';
+}
+/* ---- Magazina (gjendja) ---- */
+const storeFields = () => [{ n: 'name', l: 'Magazina (p.sh. MAGAZINA 1 QENDRORE)', req: 1, full: 1 }, { n: 'label', l: 'Titulli i kolonës (p.sh. GJENDJE NËNTOR 14/11/2026)', full: 1 }];
+function viewStores() {
+  ensureBio();
+  const L = S.bio.stores; if (!L.find(s => s.id === curStore)) curStore = L.length ? L[0].id : '';
+  const s = L.find(x => x.id === curStore);
+  let h = '<section class="sec">' + tabHead('Gjendja e magazinës', 'vertikal', (s ? pdfBtn('store') : '') + '<button class="btn pri" data-act="add-store">Magazinë e re</button>');
+  h += L.length ? picker(L, curStore, x => x.name, 'store') : '<div class="card empty">Shto magazinën e parë. Çdo rresht ka produktin, kodin e lotit, gjendjen në kg dhe vendin e magazinimit.</div>';
+  if (s) {
+    h += '<div class="paper narrow"><div class="ph"><b>' + esc(s.name) + '</b><span>' + esc(s.label) + '</span><button class="btn sm" data-act="edit-store" data-id="' + s.id + '">Ndrysho</button></div><div class="tw"><table class="xt"><tr><th>Produkti</th><th>Kodi</th><th class="r">' + esc(s.label || 'Gjendje') + '</th><th>Magazinuar</th><th>Shënim</th><th></th></tr>' +
+      s.rows.map((r, i) => '<tr><td>' + cell('stores', s.id, i, 'product', r.product) + '</td><td>' + cell('stores', s.id, i, 'code', r.code) + '</td><td>' + cell('stores', s.id, i, 'qty', r.qty, 'n') + '</td><td>' + cell('stores', s.id, i, 'where', r.where) + '</td><td>' + cell('stores', s.id, i, 'note', r.note) + '</td><td><button class="btn sm" data-act="bio-delrow" data-bk="stores" data-id="' + s.id + '" data-i="' + i + '" aria-label="Fshi rreshtin">✕</button></td></tr>').join('') +
+      '<tr class="tot"><td colspan="2">Gjithsej (kg)</td><td class="r">' + num(sum(s.rows, r => r.qty)) + '</td><td colspan="3"></td></tr></table></div><div class="row" style="padding:8px"><button class="btn sm" data-act="bio-addrow" data-bk="stores" data-id="' + s.id + '">Shto rresht</button></div></div>';
+  }
+  return h + '</section>';
+}
+
+/* ---- Kartela e produktit ---- */
+const cardFields = () => [{ n: 'product', l: 'Produkti', req: 1 }, { n: 'pcode', l: 'Kodi i produktit (p.sh. 109)' }];
+const lotFields = () => [{ n: 'label', l: 'Loti (p.sh. K10/2-26)', req: 1 }];
+function cardCalc(c) {
+  const bal = {}; c.lots.forEach(l => { bal[l.id] = 0; });
+  return c.rows.map(r => { if (r.lot && bal[r.lot] != null) bal[r.lot] += (+r.in || 0) - (+r.so || 0) - (+r.sc || 0) - (+r.firo || 0); return Object.assign({}, bal); });
+}
+function lotSel(c, i, v) {
+  return '<select class="xc" data-bk="cards" data-id="' + c.id + '" data-i="' + i + '" data-f="lot" data-t="t"><option value="">–</option>' + c.lots.map(l => '<option value="' + l.id + '"' + (l.id === v ? ' selected' : '') + '>' + esc(l.label) + '</option>').join('') + '</select>';
+}
+function viewCards() {
+  ensureBio();
+  const L = S.bio.cards; if (!L.find(s => s.id === curCard)) curCard = L.length ? L[0].id : '';
+  const c = L.find(x => x.id === curCard);
+  let h = '<section class="sec">' + tabHead('Kartela e produktit ' + T.slice(0, 4), 'horizontal', (c ? pdfBtn('card') : '') + '<button class="btn pri" data-act="add-card">Produkt i ri</button>');
+  h += L.length ? picker(L, curCard, x => x.product, 'card') : '<div class="card empty">Shto produktin e parë. Çdo hyrje, shitje dhe firo shënohet me lotin e parcelës, dhe gjendja e çdo loti llogaritet vetë.</div>';
+  if (c) {
+    const bal = cardCalc(c), last = bal.length ? bal[bal.length - 1] : {};
+    h += '<div class="paper"><div class="ph col"><b>PRODUKTI : ' + esc(c.product) + '</b><span>KODI I PRODUKTIT: ' + esc(c.pcode) + '</span><span class="row">Lotet: ' + c.lots.map(l => '<button class="chip pickc" data-act="edit-lot" data-id="' + c.id + '" data-lot="' + l.id + '">' + esc(l.label) + '</button>').join('') + '<button class="btn sm" data-act="add-lot" data-id="' + c.id + '">Shto lot</button><button class="btn sm" data-act="edit-card" data-id="' + c.id + '">Ndrysho kokën</button></span></div>' +
+      '<div class="tw"><table class="xt"><tr><th>Data</th><th class="r">Hyrje organike (kg)</th><th>Statusi</th><th class="r">Shitje organike (kg)</th><th class="r">Shitje konv. (kg)</th><th class="r">Firo</th><th>Loti</th>' + c.lots.map(l => '<th class="r">' + esc(l.label) + '</th>').join('') + '<th>Kodi i produktit</th><th></th></tr>' +
+      c.rows.map((r, i) => '<tr><td>' + cell('cards', c.id, i, 'd', r.d, 'd') + '</td><td>' + cell('cards', c.id, i, 'in', r.in, 'n') + '</td><td>' + cell('cards', c.id, i, 'status', r.status) + '</td><td>' + cell('cards', c.id, i, 'so', r.so, 'n') + '</td><td>' + cell('cards', c.id, i, 'sc', r.sc, 'n') + '</td><td>' + cell('cards', c.id, i, 'firo', r.firo, 'n') + '</td><td>' + lotSel(c, i, r.lot) + '</td>' + c.lots.map(l => '<td class="r">' + num(bal[i][l.id]) + '</td>').join('') + '<td>' + cell('cards', c.id, i, 'code', r.code) + '</td><td><button class="btn sm" data-act="bio-delrow" data-bk="cards" data-id="' + c.id + '" data-i="' + i + '" aria-label="Fshi rreshtin">✕</button></td></tr>').join('') +
+      '<tr class="tot"><td>Gjithsej</td><td class="r">' + num(sum(c.rows, r => r.in)) + '</td><td></td><td class="r">' + num(sum(c.rows, r => r.so)) + '</td><td class="r">' + num(sum(c.rows, r => r.sc)) + '</td><td class="r">' + num(sum(c.rows, r => r.firo)) + '</td><td class="r">Gjendja</td>' + c.lots.map(l => '<td class="r">' + num(last[l.id] || 0) + '</td>').join('') + '<td colspan="2" class="r">' + num(sum(c.lots, l => last[l.id])) + ' kg</td></tr></table></div><div class="row" style="padding:8px"><button class="btn sm" data-act="bio-addrow" data-bk="cards" data-id="' + c.id + '">Shto rresht</button></div></div>';
+  }
+  return h + '</section>';
+}
+
+/* ---- Veprime ---- */
+const blankRow = bk => bk === 'sheets' ? { d1: '', fresh: 0, d2: '', dry: 0 } : bk === 'stores' ? { product: '', code: '', qty: 0, where: '', note: '' } : { d: '', in: 0, status: '', so: 0, sc: 0, firo: 0, lot: '', code: '' };
+const blanks = (bk, n) => Array.from({ length: n }, () => blankRow(bk));
+function flash(msg) { const el = document.getElementById('status'); if (el) { el.textContent = msg; setTimeout(paintStatus, 3500); } }
+
+function bioAct(a, el) {
+  const id = el.dataset.id;
+  switch (a) {
+    case 'add-rp': edit('rp', rpFields(), { total: 0 }, 'Parcelë e re'); return true;
+    case 'edit-rp': edit('rp', rpFields(), withRec('rp', id), 'Ndrysho parcelën'); return true;
+    case 'add-rot': if (!S.bio.rp.length) { flash('Shto së pari një parcelë'); return true; } edit('rot', rotFields(), { parcel: S.bio.rp[0].code, m2: 0 }, 'Nënparcelë e re'); return true;
+    case 'edit-rot': edit('rot', rotFields(), withRec('rot', id), 'Ndrysho nënparcelën'); return true;
+    case 'add-cult': edit('cult', cultFields(), { approved: 0, exported: 0, stock: 0 }, 'Rresht i ri'); return true;
+    case 'edit-cult': edit('cult', cultFields(), withRec('cult', id), 'Ndrysho rreshtin'); return true;
+    case 'add-sheet': edit('sheets', sheetFields(), { approved: 0 }, 'Fletë e re vjelje', r => { r.rows = blanks('sheets', 10); curSheet = r.id; }); return true;
+    case 'edit-sheet': edit('sheets', sheetFields(), withRec('sheets', id), 'Ndrysho kokën e fletës'); return true;
+    case 'add-store': edit('stores', storeFields(), { name: 'MAGAZINA 1 QENDRORE' }, 'Magazinë e re', r => { r.rows = blanks('stores', 10); curStore = r.id; }); return true;
+    case 'edit-store': edit('stores', storeFields(), withRec('stores', id), 'Ndrysho magazinën'); return true;
+    case 'add-card': edit('cards', cardFields(), {}, 'Produkt i ri', r => { r.lots = []; r.rows = blanks('cards', 8); curCard = r.id; }); return true;
+    case 'edit-card': edit('cards', cardFields(), withRec('cards', id), 'Ndrysho kokën e kartelës'); return true;
+    case 'add-lot': { const c = find('cards', id); formModal('Lot i ri', lotFields(), {}, o => { c.lots.push({ id: uid('l'), label: o.label }); save(); }); return true; }
+    case 'edit-lot': {
+      const c = find('cards', id), l = c.lots.find(x => x.id === el.dataset.lot);
+      formModal('Ndrysho lotin', lotFields(), l, o => { l.label = o.label; save(); }, '<button type="button" class="btn bad" style="margin-right:auto" data-act="del-lot" data-id="' + c.id + '" data-lot="' + l.id + '">Fshi</button>'); return true;
+    }
+    case 'del-lot': {
+      const c = find('cards', id), l = c.lots.find(x => x.id === el.dataset.lot);
+      confirmModal('Ta fshij lotin? Rreshtat që e përdorin mbeten pa lot.', () => { c.lots.splice(c.lots.indexOf(l), 1); c.rows.forEach(r => { if (r.lot === l.id) r.lot = ''; }); save(); }); return true;
+    }
+    case 'bio-addrow': { const d = S.bio[el.dataset.bk].find(x => x.id === id); d.rows.push(blankRow(el.dataset.bk)); save(); render(); return true; }
+    case 'bio-delrow': { const d = S.bio[el.dataset.bk].find(x => x.id === id); d.rows.splice(+el.dataset.i, 1); save(); render(); return true; }
+    case 'pdf': exportPdf(el.dataset.k); return true;
+  }
+  return false;
+}
+function bioPick(el) { const k = el.dataset.pick; if (k === 'sheet') curSheet = el.dataset.id; else if (k === 'store') curStore = el.dataset.id; else curCard = el.dataset.id; render(); }
+
+document.addEventListener('change', e => {
+  const el = e.target, bk = el.dataset && el.dataset.bk;
+  if (!bk) return;
+  const d = S.bio[bk].find(x => x.id === el.dataset.id), r = d && d.rows[+el.dataset.i];
+  if (!r) return;
+  r[el.dataset.f] = el.dataset.t === 'n' ? numIn(el.value) : el.value.trim();
+  save(); render();
+});
+
+/* ---- Eksport PDF A4 ---- */
+const pnum = (n, d) => num(n, d).replace(/\u2212/g, '-');
+function exportPdf(k) {
+  const J = window.jspdf && window.jspdf.jsPDF;
+  if (!J) { flash('Biblioteka PDF nuk u ngarkua'); return; }
+  ensureBio();
+  const doc = new J({ orientation: (k === 'sheet' || k === 'store') ? 'portrait' : 'landscape', unit: 'mm', format: 'a4' });
+  const st = { theme: 'grid', margin: { left: 12, right: 12 }, styles: { fontSize: 8.5, cellPadding: 1.6, lineColor: [110, 110, 110], lineWidth: 0.2, textColor: 20 }, headStyles: { fillColor: [31, 122, 77], textColor: 255, fontStyle: 'bold' }, footStyles: { fillColor: [226, 238, 230], textColor: 20, fontStyle: 'bold' } };
+  const line = (t, y, b) => { doc.setFont('helvetica', b ? 'bold' : 'normal'); doc.setFontSize(b ? 13 : 10); doc.text(String(t), 12, y); };
+  const tbl = o => { doc.autoTable(Object.assign({}, st, o)); return doc.lastAutoTable.finalY; };
+  const R = { halign: 'right' };
+  let name = 'BioBes.pdf';
+  if (k === 'rot') {
+    name = 'Plan_qarkullimi.pdf'; line('PLAN QARKULLIMI ' + YEARS[0] + '-' + YEARS[YEARS.length - 1], 14, 1); let y = 22;
+    S.bio.rp.forEach(p => {
+      if (y > 170) { doc.addPage(); y = 14; }
+      line('PARCELA: ' + p.code + '    ADRESA: ' + p.address + '    SIP TOTALE ' + pnum(p.total) + ' m2', y);
+      y = tbl({ startY: y + 3, head: [['Nenparcela', 'm2'].concat(YEARS)], body: S.bio.rot.filter(r => r.parcel === p.code).map(r => [r.sub, pnum(r.m2)].concat(YEARS.map(yy => r['y' + yy] || ''))), columnStyles: { 1: R } }) + 9;
+    });
+  } else if (k === 'cult') {
+    name = 'Kultivime_' + T.slice(0, 4) + '.pdf'; line('KULTIVIME BIOBES ' + T.slice(0, 4), 14, 1);
+    const tt = S.bio.cult.map(sheetTotals);
+    tbl({ startY: 20, head: [['Parcela', 'Produkti', 'Sasi e miratuar', 'Dt e fillimit te vjeljes', 'Dt e mbarimit te vjeljes', 'Mbledhur njome', 'Mbledhur thate', 'Eksportuar', 'Stoku', 'Komente']],
+      body: S.bio.cult.map((c, i) => [c.parcel, c.product, pnum(c.approved), c.start || '', c.end || '', tt[i].has ? pnum(tt[i].fresh) : '', tt[i].has ? pnum(tt[i].dry) : '', pnum(c.exported), pnum(c.stock), c.comment || '']),
+      foot: [['Gjithsej', '', pnum(sum(S.bio.cult, c => c.approved)), '', '', pnum(sum(tt, x => x.fresh)), pnum(sum(tt, x => x.dry)), pnum(sum(S.bio.cult, c => c.exported)), pnum(sum(S.bio.cult, c => c.stock)), '']], columnStyles: { 2: R, 5: R, 6: R, 7: R, 8: R } });
+  } else if (k === 'sheet') {
+    const s = find('sheets', curSheet); name = 'Fleta_vjeljes_' + String(s.parcel).replace(/[^\w-]/g, '_') + '.pdf';
+    line('PRODUKTI : ' + s.product, 16, 1); line('PARCELA : ' + s.parcel, 23); line('SASIA E MIRATUAR : ' + pnum(s.approved) + ' KG', 29); line('RAPORTI : ' + (s.report || ''), 35);
+    tbl({ startY: 41, head: [['Data', 'Sasi e njome (kg)', 'Data', 'Sasi e thate (kg)']], body: s.rows.map(r => [fmtDate(r.d1), r.fresh ? pnum(r.fresh) : '', fmtDate(r.d2), r.dry ? pnum(r.dry) : '']), foot: [['Gjithsej', pnum(sum(s.rows, r => r.fresh)), '', pnum(sum(s.rows, r => r.dry))]], columnStyles: { 1: R, 3: R } });
+  } else if (k === 'store') {
+    const s = find('stores', curStore); name = 'Gjendja_magazina.pdf';
+    line(s.name, 16, 1);
+    tbl({ startY: 22, head: [['Produkti', 'Kodi', s.label || 'Gjendje', 'Magazinuar', 'Shenim']], body: s.rows.filter(r => r.product || r.code || r.qty).map(r => [r.product, r.code, pnum(r.qty), r.where, r.note]), foot: [['Gjithsej (kg)', '', pnum(sum(s.rows, r => r.qty)), '', '']], columnStyles: { 2: R } });
+  } else if (k === 'card') {
+    const c = find('cards', curCard), bal = cardCalc(c), last = bal.length ? bal[bal.length - 1] : {}; name = 'Kartela_' + String(c.product).replace(/[^\w-]/g, '_') + '.pdf';
+    line('KARTELE PRODUKTI ' + T.slice(0, 4), 14, 1); line('PRODUKTI : ' + c.product, 21); line('KODI I PRODUKTIT: ' + (c.pcode || ''), 27);
+    tbl({ startY: 32, head: [['Data', 'Hyrje organike (kg)', 'Statusi', 'Shitje organike (kg)', 'Shitje konvencionale (kg)', 'Firo'].concat(c.lots.map(l => l.label), ['Kodi i produktit'])],
+      body: c.rows.filter(r => r.d || r.in || r.so || r.sc || r.firo || r.status).map(r => { const i = c.rows.indexOf(r); return [fmtDate(r.d), pnum(r.in), r.status || '', pnum(r.so), pnum(r.sc), pnum(r.firo)].concat(c.lots.map(l => pnum(bal[i][l.id])), [r.code || '']); }),
+      foot: [['Gjithsej', pnum(sum(c.rows, r => r.in)), '', pnum(sum(c.rows, r => r.so)), pnum(sum(c.rows, r => r.sc)), pnum(sum(c.rows, r => r.firo))].concat(c.lots.map(l => pnum(last[l.id] || 0)), [''])] });
+  }
+  const n = doc.getNumberOfPages(), w = doc.internal.pageSize.getWidth(), hh = doc.internal.pageSize.getHeight();
+  for (let i = 1; i <= n; i++) { doc.setPage(i); doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.text('Faqe ' + i + '/' + n + '  ' + fmtDate(T), w - 12, hh - 6, { align: 'right' }); }
+  Promise.resolve(DL.save({ filename: name, data: doc.output('arraybuffer') })).then(() => flash('PDF u shkarkua'), e => { if (!e || e.code !== 'declined') flash('PDF nuk u ruajt'); });
+}
+
+/* ---- Skedat e reja në aplikacion ---- */
+TABS.push(['rot', 'Qarkullimi'], ['cult', 'Kultivime'], ['sheets', 'Fletë vjelje'], ['stores', 'Magazina'], ['cards', 'Kartela']);
+Object.assign(VIEWS, { rot: viewRot, cult: viewCult, sheets: viewSheets, stores: viewStores, cards: viewCards });
+async function connectDL() { try { const cl = window.claude; DL = cl && cl.use ? await cl.use('downloads') : null; } catch (e) { DL = null; } if (DL) render(); }
+load();
+ensureBio();
+render();
+connect();
+connectDL();
+</script>
