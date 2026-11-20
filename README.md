@@ -72,3 +72,12 @@ Ekranet **Parcelat, Shpenzimet/Blerjet, Mostrat, Zonat dhe Puna në tokë** bini
 - **Rikthim** me provë paraprake (dry-run) dhe më pas shkrim: shton vetëm, ripërdor rreshtat ekzistues sipas kodit/emrit dhe **rihartëzon lidhjet** (një backup i vjetër rindërton `farmer_id`, `plot_id`, `product_id`… të sakta). Nuk fshin asgjë.
 - **Rregullim i vlerës së blerjes:** `purchases.amount` nuk shkruhej kurrë (mbetej 0); tani llogaritet në bazë me trigger (`0009_vlera_e_blerjes.sql`) dhe u plotësuan 11 blerjet ekzistuese — 951.300 lekë që më parë s'shfaqeshin në raporte.
 - Dokumenti: `docs/backup.md` (çka përfshihet, si rikthehet, kufizimet).
+
+## Faza 10 — faturat dhe fletët e magazinës në PDF (v0.10.0)
+- **Katër dokumente zyrtare**, të nxjerra nga të dhënat reale: **faturë shitje** (nga daljet e magazinës), **faturë blerje** (nga blerjet te fermerët), **fletë hyrje** dhe **fletë dalje** (nga magazina). Menuja: *Qendra dhe eksporti → Printo*; shkurtore edhe te «Blerjet» dhe «Magazina».
+- **Modeli fiskal shqiptar** (Ligj 87/2019, Udhëzim 16/2020): titulli «Faturë tatimore» / «Faturë tatimore — Blerje» / «Faturë-Th», shitësi e blerësi me NIPT e adresa, numri i faturës (`FS-2026-0007`), datat, kodi i operatorit, sasia · përshkrimi · çmimi njësi, vlera pa TVSH, TVSH-ja, totali, mënyra e pagesës, monedha, afati, llogaria bankare, **NSLF** dhe **NIVF** me **kod QR**.
+- **NIVF-i nuk krijohet në telefon** — vjen vetëm nga sistemi i fiskalizimit. Pa fiskalizim, fatura printohet me NSLF, pa QR, me shënimin ligjor për transmetimin brenda 48 orëve; kur NIVF-i është i njohur (`fiscal.nivf`), kodi QR vizatohet automatikisht.
+- **Fletët e magazinës**: numri i dokumentit, data, magazina, dokumenti shoqërues, transporti, pala (furnitori / marrësi), artikujt me kod e njësi, sasia e vlera totale, dhe tri nënshkrimet (Dorëzoi · Mori · Magazinieri).
+- **Të dhënat fiskale** plotësohen një herë te *Printo → Të dhënat fiskale* (NIPT, adresa, qyteti, telefoni, email-i, kodi i operatorit, IBAN-i, TVSH-ja); ruhen te `companies` dhe përdoren në çdo dokument. Administruesi i kompanisë i ndryshon vetë (`0011_fiskal_kompania_admin.sql`).
+- **Printimi**: «Printo» hap dialogun e sistemit Android (printer Wi-Fi ose «Ruaj si PDF»); «Nda» e dërgon faturën me WhatsApp, email ose Drive (PDF A4, `expo-print` + `expo-sharing`). Numrat e dokumenteve vijnë nga funksionet `doc_number` dhe `doc_nslf` në bazë.
+- **Testet**: `tests/print_test.js` — 15 raste për formatin e numrave, A4-në, faqet e shumta dhe të katër dokumentet; testi i renderimit mbulon 22 ekrane.
