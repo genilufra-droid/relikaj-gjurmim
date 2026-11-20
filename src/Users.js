@@ -33,6 +33,7 @@ export default function Users({ cid, me }) {
   const [form, setForm] = useState(false), [act, setAct] = useState(null);
   const [msg, setMsg] = useState(""), [err, setErr] = useState("");
   const [busy, setBusy] = useState(false), [newPass, setNewPass] = useState("");
+  const [emailEdit, setEmailEdit] = useState("");
   const [f, setF] = useState({ username: "", email: "", password: "", name: "", role: "grumbullues", farmer: null });
 
   const load = useCallback(async () => {
@@ -73,6 +74,16 @@ export default function Users({ cid, me }) {
     setBusy(false);
   };
 
+  const saveEmail = async () => {
+    setErr(""); setMsg(""); setBusy(true);
+    try {
+      const r = await call({ action: "set_email", company_id: cid, user_id: act.user_id, email: emailEdit.trim() });
+      setMsg(`Email-i i llogarisë u vendos: ${r.login}. Nga tani punonjësi hyn me këtë email dhe mund të rivendosë fjalëkalimin vetë.`);
+      await load();
+    } catch (e) { setErr(e.message); }
+    setBusy(false);
+  };
+
   if (form) return (
     <ScrollView style={s.screen} contentContainerStyle={s.pad} keyboardShouldPersistTaps="handled">
       <Text style={s.h1}>Përdorues i ri</Text>
@@ -100,6 +111,27 @@ export default function Users({ cid, me }) {
       <ScrollView style={s.screen} contentContainerStyle={s.pad} keyboardShouldPersistTaps="handled">
         <Text style={s.h1}>{act.name || "Përdorues"}</Text>
         <Text style={s.sub}>{ct.email || "Pa email të regjistruar"}</Text>
+
+        <SectionTitle>Email i llogarisë</SectionTitle>
+        <Field
+          label="Email i vërtetë (për hyrje dhe rivendosje)"
+          value={emailEdit}
+          onChangeText={setEmailEdit}
+          autoCapitalize="none"
+          keyboardType="email-address"
+          placeholder="punonjesi@shembull.al"
+        />
+        <Btn
+          title="Ruaj emailin"
+          alt
+          icon="at-outline"
+          onPress={saveEmail}
+          busy={busy}
+          disabled={!emailEdit.trim() || emailEdit.trim().toLowerCase() === String(ct.email || "").toLowerCase()}
+        />
+        {synthetic
+          ? <Text style={[s.mute, { marginTop: 6 }]}>Sot llogaria hyn me emër përdoruesi dhe s’ka email të vërtetë. Vendosni një email dhe punonjësi e rivendos vetë fjalëkalimin.</Text>
+          : <Text style={[s.mute, { marginTop: 6 }]}>Ndryshimi i email-it nuk e prek fjalëkalimin; punonjësi vazhdon të hyjë me të njëjtin fjalëkalim.</Text>}
 
         <SectionTitle>Rivendos fjalëkalimin</SectionTitle>
         {!synthetic && !!ct.email && (
@@ -138,7 +170,12 @@ export default function Users({ cid, me }) {
       renderItem={({ item: r }) => {
         const ct = contacts[r.user_id] || {};
         return (
-          <Card onPress={() => { setErr(""); setMsg(""); setNewPass(""); setAct(r); }} style={{ marginTop: 10 }}>
+          <Card onPress={() => {
+            const ct0 = contacts[r.user_id] || {};
+            setErr(""); setMsg(""); setNewPass("");
+            setEmailEdit(SYNTHETIC.test(ct0.email || "") ? "" : ct0.email || "");
+            setAct(r);
+          }} style={{ marginTop: 10 }}>
             <View style={s.listRow}>
               <View style={{ flex: 1 }}>
                 <Text style={{ color: C.text, fontWeight: "800" }}>{r.name || "(pa emër)"}</Text>

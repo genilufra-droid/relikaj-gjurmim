@@ -61,6 +61,17 @@ Deno.serve(async (req: Request) => {
       const { error } = await admin.auth.admin.updateUserById(uid, { password });
       return error ? json({ error: "Ndryshimi dështoi" }, 500) : json({ ok: true });
     }
+    if (b.action === "set_email") {
+      const email = String(b.email ?? "").trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return json({ error: "Email-i nuk është i saktë" }, 422);
+      if (/@login\.relikaj\.al$/i.test(email)) return json({ error: "Ky është email i brendshëm; shkruani emailin e vërtetë të punonjësit" }, 422);
+      const { error } = await admin.auth.admin.updateUserById(uid, { email, email_confirm: true });
+      if (error) {
+        const msg = String(error.message || "");
+        return json({ error: /already|exists|duplicate/i.test(msg) ? "Ky email përdoret nga një llogari tjetër" : "Ndryshimi i email-it dështoi" }, 409);
+      }
+      return json({ ok: true, login: email });
+    }
     return json({ error: "Veprimi nuk njihet" }, 400);
   } catch (_e) {
     return json({ error: "Gabim i brendshëm" }, 500);

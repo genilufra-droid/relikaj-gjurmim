@@ -29,6 +29,7 @@ import Import from "./src/Import";
 import Start from "./src/Start";
 import Assistant from "./src/Assistant";
 import ErrorBoundary from "./src/ErrorBoundary";
+import Field from "./src/Field";
 import Profile from "./src/Profile";
 import ResetPassword from "./src/auth/Reset";
 import { parseAuthUrl, isRecovery } from "./src/auth/links";
@@ -197,7 +198,9 @@ export default function App() {
   else if (tab === "kujtuesit") body = <Reminders key={cid} cid={cid} onGo={go} />;
   else if (tab === "modulet") body = <Hub role={role} onGo={go} />;
   else if (tab === "gjurmimi") body = <Trace key={cid} cid={cid} />;
-  else if (tab === "pasqyra") body = <Dashboard key={cid} cid={cid} role={role} onGo={go} />;
+  else if (tab === "pasqyra") body = role === "grumbullues"
+    ? <Field key={cid} cid={cid} name={session.user.user_metadata?.name} onNew={(k) => setForm(k)} onGo={go} />
+    : <Dashboard key={cid} cid={cid} role={role} onGo={go} />;
   else if (tab === "parcelat") body = <Plots key={cid} cid={cid} role={role} onNew={() => setForm("parcela")} onOpen={(id) => setPlotId(id)} />;
   else if (tab === "kultivimet") body = <Cultivations key={cid} cid={cid} role={role} onNew={() => setForm("kultivim")} />;
   else if (tab === "detyra") body = <Tasks key={cid} cid={cid} role={role} onNew={() => setForm("detyre")} />;

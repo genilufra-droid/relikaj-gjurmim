@@ -24,6 +24,7 @@ import Tasks from "../../src/Tasks";
 import Observations from "../../src/Observations";
 import Cultivations from "../../src/Cultivations";
 import Inputs from "../../src/Inputs";
+import Field from "../../src/Field";
 
 const up = () => {};
 const CASES = [
@@ -31,6 +32,7 @@ const CASES = [
   ["Plots (me të dhëna)", <Plots cid={2} role="admin" onNew={up} onOpen={up} />],
   ["PlotForm", <PlotForm cid={2} onDone={up} />],
   ["Dashboard", <Dashboard cid={2} role="admin" onGo={up} />],
+  ["Field (grumbullues)", <Field cid={2} name="Arben" onNew={up} onGo={up} />],
   ["Trace", <Trace cid={2} />],
   ["Reports", <Reports cid={2} />],
   ["Import", <Import cid={2} onGo={up} />],
@@ -54,6 +56,11 @@ const PLOT_ROWS = [{
   farmer: "Ilir Koçi", cultivations: 2, tasks_open: 1, observations_open: 0, inputs_cost: 25000,
 }];
 
+const FIELD_ROWS = [{
+  id: 7, lot_code: "LOT-2026-7", qty_fresh: 12, qty_dry: 3.5, amount: 17500,
+  farmers: { first_name: "Ilir", last_name: "Koçi" }, products: { name: "Mjedër" }, zones: { code: "W01" },
+}];
+
 let pass = 0, fail = 0;
 const origError = console.error;
 const reactErrors = [];
@@ -62,7 +69,11 @@ process.on("unhandledRejection", (e) => { reactErrors.push("unhandledRejection: 
 
 const run = async () => {
   for (const [name, el] of CASES) {
-    setRows((t) => (name.startsWith("Plots") && t === "plot_summary" ? (name.includes("me të dhëna") ? PLOT_ROWS : []) : []));
+    setRows((t) => {
+      if (name.startsWith("Plots") && t === "plot_summary") return name.includes("me të dhëna") ? PLOT_ROWS : [];
+      if (name.startsWith("Field") && t === "purchases") return FIELD_ROWS;
+      return [];
+    });
     try {
       let r;
       await act(async () => {

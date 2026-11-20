@@ -143,6 +143,15 @@ Prisni 15 minuta – 4 orë → kthehuni te Brevo dhe shtypni **Verify**. Kontro
 <p>Fjalëkalimi i llogarisë suaj në BioBes Farm sapo u ndryshua. Nëse nuk e bëtë ju, rivendoseni menjëherë dhe njoftoni administratorin.</p>
 ```
 
+## 4b. Ndryshimi i email-it të një llogarie (admini)
+
+Te **Përdoruesit** → prekni anëtarin → *Email i llogarisë* → shkruani emailin e vërtetë → **Ruaj emailin**.
+
+- Email-i konfirmohet menjëherë (pa link konfirmimi) dhe **fjalëkalimi nuk ndryshon**.
+- Nga ai moment punonjësi hyn me **email** (jo me emër përdoruesi) dhe «Harruat fjalëkalimin?» i dërgon lidhjen aty.
+- Email-et e brendshme (`…@login.relikaj.al`) refuzohen; një email që përdoret nga llogari tjetër kthen gabim.
+- Veprimi bëhet nga funksioni `admin-users` (v2), vetëm për adminin e kompanisë ose administratorin e platformës.
+
 ## 5. Si punon teknikisht
 
 - Klienti: `resetPasswordForEmail(email, { redirectTo: "biobesfarm://reset" })`.
