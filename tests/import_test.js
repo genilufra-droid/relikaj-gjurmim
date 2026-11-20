@@ -1,7 +1,8 @@
 // Testet e importimit nga Excel/CSV — ekzekutohen me esbuild + node (shih fundin e skedarit).
 import JSZip from "jszip";
 import { parseCsv, parseHtmlTable, parseXlsx, readWorkbook, guessHeaderRow, headerOf, base64ToText } from "../src/import/parse.js";
-import { guessMapping, prepareRows, buildContext, templateCsv, toNum, norm } from "../src/import/spec.js";
+import { guessMapping, prepareRows, buildContext, toNum, norm } from "../src/import/spec.js";
+import { buildTemplateWorkbook } from "../src/import/template.js";
 
 let pass = 0, fail = 0;
 const eq = (a, b, msg) => {
@@ -161,11 +162,41 @@ eq(norm("Çorovodë"), "corovode", "norm: diakritikat");
   eq(fout.ready[1].action, "create", "prepare: fermer i re me ID");
 }
 
-// ---------------------------------------------------------------- shablloni
+// ---------------------------------------------------------------- shablloni .xlsx
 {
-  const t = templateCsv("plots");
-  ok(t.split("\n")[0].includes("Emri i parcelës"), "shabllon: titujt");
-  eq(t.trim().split("\n").length, 2, "shabllon: tituj + shembull");
+  const b64 = await buildTemplateWorkbook();
+  const wb = await readWorkbook({ base64: b64, name: "shabllon.xlsx" });
+  const names = wb.sheets.map((s) => s.name);
+  eq(names, ["Udhëzime", "Zonat", "Fermerët", "Parcelat", "Produktet", "Shembuj"], "shabllon: radha e fletëve (Listat është e fshehur)");
+
+  const guide = wb.sheets[0];
+  ok(guide.rows.some((r) => String(r[0] || "").includes("Shabllon importimi")), "shabllon: titulli i udhëzimeve");
+  ok(guide.rows.some((r) => String(r[0] || "").includes("RREGULLAT E PLOTËSIMIT")), "shabllon: rregullat");
+  ok(guide.rows.some((r) => String(r[0] || "").includes("Fleta «Parcelat»")), "shabllon: dokumentimi i kolonave");
+
+  const plots = wb.sheets[3];
+  ok(plots.rows[0].some((c) => String(c).includes("Sipërfaqja")), "shabllon: titujt e parcelave");
+  eq(plots.rows.length, 1, "shabllon: fleta e të dhënave ka vetëm titujt (pa shembull që importohet)");
+
+  const ex = wb.sheets[5];
+  ok(ex.rows.some((r) => String(r[0] || "").includes("Shembuj plotësimi")), "shabllon: fleta e shembujve");
+  ok(ex.rows.some((r) => r[0] === "Parcela 1"), "shabllon: shembulli i parcelës");
+  ok(ex.rows.some((r) => r.some((c) => typeof c === "number" && c > 40)), "shabllon: shembulli me numra");
+
+  // struktura e skedarit: validime, rresht i ngrirë, bashkim qelizash, fletë e fshehur
+  const zip = await JSZip.loadAsync(b64, { base64: true });
+  const meta = await zip.file("xl/workbook.xml").async("string");
+  ok(meta.includes('state="hidden"'), "shabllon: fleta «Listat» e fshehur");
+  const parcelat = await zip.file("xl/worksheets/sheet4.xml").async("string");
+  ok(parcelat.includes('type="list"'), "shabllon: lista zgjedhjeje (dropdown)");
+  ok(parcelat.includes("state=\"frozen\""), "shabllon: rreshti i titujve i ngrirë");
+  ok(parcelat.includes("Listat!$C$2:$C$4"), "shabllon: lista e pronës lidhet me fletën Listat");
+  const udhezime = await zip.file("xl/worksheets/sheet1.xml").async("string");
+  ok(udhezime.includes("<mergeCell"), "shabllon: qelizat e udhëzimeve të bashkuara");
+
+  // shablloni me titujt tanë lidhet 100%
+  const mp = guessMapping(headerOf(plots.rows[0]), "plots");
+  eq(["name", "code", "area_ha", "zone_code", "farmer_ref", "ownership", "status", "irrigation"].every((k) => mp[k] !== undefined), true, "shabllon: kolonat njihen vetë");
 }
 
 console.log(`\n${pass} teste kaluan, ${fail} dështuan`);

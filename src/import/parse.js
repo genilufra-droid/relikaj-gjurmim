@@ -141,6 +141,7 @@ async function sheetList(zip) {
     const re = /<sheet\b([^>]*)\/?>/g;
     let m;
     while ((m = re.exec(wb))) {
+      if (/state="hidden"/.test(m[1])) continue;   // fletët ndihmëse (listat) nuk importohen
       const name = decodeXml((m[1].match(/name="([^"]*)"/) || [])[1] || "");
       const rid = (m[1].match(/r:id="([^"]+)"/) || [])[1];
       const path = rid && map.get(rid);

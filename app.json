@@ -2,7 +2,7 @@
   "expo": {
     "name": "BioBes Farm",
     "slug": "relikaj-gjurmim",
-    "version": "0.5.0",
+    "version": "0.6.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "assetBundlePatterns": [
@@ -14,19 +14,22 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "BioBes Farm përdor vendndodhjen për gjeotagimin e parcelave dhe vëzhgimeve në fushë.",
         "NSCameraUsageDescription": "BioBes Farm përdor kamerën për fotot e vëzhgimeve (dëmtues, sëmundje).",
-        "NSPhotoLibraryUsageDescription": "BioBes Farm lexon galerinë për të bashkangjitur foto vëzhgimesh."
+        "NSPhotoLibraryUsageDescription": "BioBes Farm lexon galerinë për të bashkangjitur foto vëzhgimesh.",
+        "NSMicrophoneUsageDescription": "BioBes Farm përdor mikrofonin për komandat me zë.",
+        "NSSpeechRecognitionUsageDescription": "BioBes Farm përdor njohjen e të folurit për komandat me zë."
       }
     },
     "android": {
       "package": "al.relikaj.gjurmim",
-      "versionCode": 8,
+      "versionCode": 9,
       "backgroundColor": "#14532D",
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
         "CAMERA",
         "READ_MEDIA_IMAGES",
-        "INTERNET"
+        "INTERNET",
+        "RECORD_AUDIO"
       ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
@@ -45,6 +48,13 @@
         {
           "photosPermission": "BioBes Farm lexon galerinë për fotot e vëzhgimeve.",
           "cameraPermission": "BioBes Farm përdor kamerën për fotot e vëzhgimeve."
+        }
+      ],
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "BioBes Farm përdor mikrofonin për të regjistruar komandat me zë.",
+          "speechRecognitionPermission": "BioBes Farm përdor njohjen e të folurit për të kthyer komandat në regjistrime."
         }
       ]
     ],
