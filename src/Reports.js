@@ -276,6 +276,24 @@ export default function Reports({ cid }) {
         busyP={busy === "zp"} busyX={busy === "zx"}
       />
       <ReportRow
+        title="Kultivime — përmbledhje"
+        text="Parcela, produkti, sasia e miratuar, vjelja, eksporti dhe stoku"
+        onP={both("cu", { type: "cultivation" }).p} onX={both("cu", { type: "cultivation" }).x}
+        busyP={busy === "cup"} busyX={busy === "cux"}
+      />
+      <ReportRow
+        title="Plan qarkullimi"
+        text="Çfarë kultivohet në çdo parcelë, vit pas viti"
+        onP={both("pq", { type: "rotation" }).p} onX={both("pq", { type: "rotation" }).x}
+        busyP={busy === "pqp"} busyX={busy === "pqx"}
+      />
+      <ReportRow
+        title="Faturat DHL / FedEx"
+        text="Dërgesat e mostrave, faturat dhe pagesat e kurierit"
+        onP={both("dh", { type: "shipments" }).p} onX={both("dh", { type: "shipments" }).x}
+        busyP={busy === "dhp"} busyX={busy === "dhx"}
+      />
+      <ReportRow
         title="Lista e mbledhësve"
         text="Fermerët, zonat, familjet dhe dokumentet"
         onP={both("g", { type: "growers" }).p} onX={both("g", { type: "growers" }).x}

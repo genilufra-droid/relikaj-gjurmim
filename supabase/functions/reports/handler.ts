@@ -9,9 +9,9 @@ export interface Sb { from(table: string): any }
 
 export interface Req {
   type: "summary" | "lot" | "farmer" | "growers" | "trace" | "plots" | "inputs" | "tasks" | "zones"
-    | "purchases" | "payments" | "samples" | "operations" | "reminders" | "plot";
+    | "purchases" | "payments" | "samples" | "operations" | "reminders" | "plot" | "cultivation" | "rotation" | "shipments";
   format: "xlsx" | "pdf"; company_id: number; year?: number; lot_code?: string; farmer_id?: number;
-  from?: string; to?: string; product_id?: number; zone_id?: number; plot_id?: number; status?: string;
+  from?: string; to?: string; product_id?: number; zone_id?: number; plot_id?: number; status?: string; carrier?: string;
 }
 export class ReportError extends Error { constructor(msg: string, public status = 400) { super(msg); } }
 
@@ -285,6 +285,83 @@ export async function makeReport(sb: Sb, r: Req): Promise<Report> {
       completed_at: x.completed_at ?? null,
       assignee: x.farmers ? `${x.farmers.first_name} ${x.farmers.last_name}`.trim() : "",
     })));
+  }
+  if (r.type === "cultivation") {
+    // Si «KULTIVIME 2026 · PERMBLEDHJE»: parcela, produkti, sasia e miratuar, periudha e vjeljes, sasitë e mbledhura, eksporti, stoku
+    const [co] = await q(sb.from("companies").select("name").eq("id", cid));
+    if (!co) throw new ReportError("Kompania nuk u gjet", 404);
+    const cults = await q(sb.from("cultivations").select("plot_id,product_id,expected_yield_kg,sowing_date,expected_harvest,plots(name,code),products(name)").eq("company_id", cid).order("plot_id"));
+    const buys = (await q(sb.from("purchases").select("date,lot_code,plot_id,product_id,qty_fresh,qty_dry").eq("company_id", cid).order("date")))
+      .filter((x: any) => String(x.date ?? "").startsWith(String(year)));
+    const lots = (await q(sb.from("lot_summary").select("lot_code,exported,stock,export_to,export_date").eq("company_id", cid).eq("year", year)));
+    const lotBy = new Map<string, any>(lots.map((l: any) => [l.lot_code, l]));
+    const cy = cults.filter((c: any) => [c.sowing_date, c.expected_harvest].some((d) => String(d ?? "").startsWith(String(year))) || buys.some((b: any) => b.plot_id === c.plot_id && b.product_id === c.product_id));
+    const seen = new Set<string>();
+    const rows = cy.map((c: any) => {
+      const mine = buys.filter((b: any) => b.plot_id === c.plot_id && b.product_id === c.product_id);
+      const codes = [...new Set(mine.map((b: any) => b.lot_code))];
+      seen.add(`${c.plot_id}/${c.product_id}`);
+      const exp = codes.reduce((a: number, k: string) => a + Number(lotBy.get(k)?.exported ?? 0), 0);
+      const stock = codes.reduce((a: number, k: string) => a + Number(lotBy.get(k)?.stock ?? 0), 0);
+      const last = codes.map((k: string) => lotBy.get(k)).filter((l: any) => l?.export_to).sort((a: any, b: any) => String(b.export_date).localeCompare(String(a.export_date)))[0];
+      return [c.plots?.code || c.plots?.name || "", c.products?.name ?? "", Number(c.expected_yield_kg ?? 0) || null,
+        mine.length ? dShort(String(mine[0].date)) : "", mine.length ? dShort(String(mine[mine.length - 1].date)) : "",
+        mine.reduce((a: number, b: any) => a + Number(b.qty_fresh ?? 0), 0), mine.reduce((a: number, b: any) => a + Number(b.qty_dry ?? 0), 0),
+        exp, stock, last ? `${last.export_to} ${last.export_date ? dShort(last.export_date) : ""}`.trim() : ""];
+    });
+    const tot = (i: number) => rows.reduce((a: number, x: any) => a + Number(x[i] ?? 0), 0);
+    return tableReport({
+      name: `Kultivime_${year}`, sheet: `KULTIVIME ${year}`, title: `Kultivime ${co.name} ${year}`,
+      subtitle: `${rows.length} kultivime · ${tot(6).toFixed(0)} kg të thata të mbledhura`,
+      cols: [{ label: "Parcela", width: 11 }, { label: "Produkti", width: 26 }, { label: "Sasi e miratuar (kg)", width: 14, align: "r" },
+        { label: "Fillimi i vjeljes", width: 13 }, { label: "Mbarimi i vjeljes", width: 13 }, { label: "Mbledhur njomë (kg)", width: 14, align: "r" },
+        { label: "Mbledhur thatë (kg)", width: 14, align: "r" }, { label: "Eksportuar (kg)", width: 13, align: "r" }, { label: "Stoku (kg)", width: 12, align: "r" },
+        { label: "Klienti / data", width: 20 }],
+      rows, totals: ["__label__", "", tot(2), "", "", tot(5), tot(6), tot(7), tot(8), ""], totalsLabel: "GJITHSEJ",
+    });
+  }
+  if (r.type === "rotation") {
+    // Si «PLAN QARKULLIMI»: çdo parcelë dhe çfarë kultivohet në çdo vit (djerr kur nuk ka kultivim)
+    const [co] = await q(sb.from("companies").select("name").eq("id", cid));
+    if (!co) throw new ReportError("Kompania nuk u gjet", 404);
+    const plots = await q(sb.from("plots").select("id,name,code,area_ha,ownership,status").eq("company_id", cid).order("code"));
+    const cults = await q(sb.from("cultivations").select("plot_id,expected_yield_kg,sowing_date,expected_harvest,stage,products(name)").eq("company_id", cid));
+    const years = Array.from({ length: 7 }, (_, i) => year - 4 + i);
+    const yearOf = (c: any) => Number(String(c.sowing_date || c.expected_harvest || "").slice(0, 4)) || null;
+    const rows = plots.map((p: any) => {
+      const cells = years.map((y) => {
+        const mine = cults.filter((c: any) => c.plot_id === p.id && yearOf(c) === y);
+        if (mine.length) return mine.map((c: any) => `${c.products?.name ?? "?"}${Number(c.expected_yield_kg) ? ` ${Number(c.expected_yield_kg)} kg` : ""}`).join("; ");
+        return y <= year && p.status === "fallow" ? "djerr" : "";
+      });
+      return [p.code || p.name, `${Number(p.area_ha ?? 0)} ha`, ...cells];
+    });
+    return tableReport({
+      name: `Plan_qarkullimi_${year}`, sheet: "PLAN QARKULLIMI", title: `Plan qarkullimi ${years[0]}–${years[years.length - 1]}`,
+      subtitle: `${co.name} · ${rows.length} parcela`,
+      cols: [{ label: "Parcela", width: 11 }, { label: "Sipërfaqja", width: 11, align: "r" }, ...years.map((y) => ({ label: String(y), width: 20 }))],
+      rows,
+    });
+  }
+  if (r.type === "shipments") {
+    // Si «DHL FATURAT»: regjistri i dërgesave dhe faturave të kurierit, me pagesat
+    const [co] = await q(sb.from("companies").select("name").eq("id", cid));
+    if (!co) throw new ReportError("Kompania nuk u gjet", 404);
+    const all = await q(sb.from("shipments").select("tracking_no,carrier,ship_date,recipient,country,invoice_date,amount_eur,paid_date,paid_eur,note,customers(name,country)").eq("company_id", cid).order("ship_date"));
+    const rows = all.filter((x: any) => inRange(x.ship_date, r.from, r.to) && (!r.carrier || String(x.carrier).toLowerCase() === r.carrier.toLowerCase()));
+    const sum = (k: string) => rows.reduce((a: number, x: any) => a + Number(x[k] ?? 0), 0);
+    const label = r.carrier || "DHL / FedEx";
+    return tableReport({
+      name: `Faturat_${(r.carrier || "kurier").replace(/\W+/g, "")}_${r.from || r.year || "te_gjitha"}`, sheet: "FATURAT", title: `${label} — faturat e dërgesave`,
+      subtitle: `${co.name} · ${periodLabel(r)} · ${rows.length} dërgesa · borxh ${(sum("amount_eur") - sum("paid_eur")).toFixed(2)} EUR`,
+      cols: [{ label: "Nr.", width: 6, align: "c" }, { label: "Kodi i gjurmimit", width: 18 }, { label: "Kuriri", width: 9 }, { label: "Data e dërgesës", width: 13 },
+        { label: "Marrësi", width: 28 }, { label: "Shteti", width: 12 }, { label: "Data e faturës", width: 13 }, { label: "Shuma (EUR)", width: 12, align: "r" },
+        { label: "Data e pagesës", width: 13 }, { label: "Paguar (EUR)", width: 12, align: "r" }, { label: "Mbetje (EUR)", width: 12, align: "r" }, { label: "Shënim", width: 28 }],
+      rows: rows.map((x: any, i: number) => [i + 1, x.tracking_no, x.carrier, x.ship_date ? dShort(x.ship_date) : "", x.customers?.name || x.recipient || "",
+        x.customers?.country || x.country || "", x.invoice_date ? dShort(x.invoice_date) : "", Number(x.amount_eur ?? 0), x.paid_date ? dShort(x.paid_date) : "",
+        Number(x.paid_eur ?? 0), Number(x.amount_eur ?? 0) - Number(x.paid_eur ?? 0), x.note || ""]),
+      totals: ["", "__label__", "", "", "", "", "", sum("amount_eur"), "", sum("paid_eur"), sum("amount_eur") - sum("paid_eur"), ""], totalsLabel: "GJITHSEJ",
+    });
   }
   throw new ReportError("Lloji i raportit nuk njihet");
 }

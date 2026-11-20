@@ -39,7 +39,7 @@ Të njëjtat skedarë përdoren në dy vende: (a) Edge Function `reports` për g
 - Bërë: faza 1 (përdorues, role, blerje, magazinë, raporte), faza 2 (mostra, klientë, dërgesa), faza 3+4 (`0003_cropin.sql`: parcela me GPS, kultivime, detyra, vëzhgime me foto, inpute, qira, pagesa, kujtues, pasqyrë me alarme dhe mot) dhe faza 5 (kartela e gjurmueshmërisë).
 - Provuar: skema dhe RLS në Postgres lokal; blerje dhe raporte në telefon (Android).
 - Nuk është provuar: iPhone, magazina në telefon, ngarkesa reale.
-- Mbetet: ekzekutimi i `0003_cropin.sql` dhe `tests/test_cropin.sql` në projektin Supabase; faturat DHL/FedEx dhe llogaritë e analizave si raporte; import i të dhënave reale; punë pa internet; moti satelitor dhe SMS bulk (shërbime me pagesë).
+- Mbetet: ekzekutimi i `0003_cropin.sql` dhe `tests/test_cropin.sql` në projektin Supabase; llogaritë e analizave (kartela e GBA) si raport; import i të dhënave reale; punë pa internet; moti satelitor dhe SMS bulk (shërbime me pagesë).
 
 ## Si nisen
 Shih `README.md`.
