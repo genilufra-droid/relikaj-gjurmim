@@ -48,3 +48,13 @@ Zinxhiri i biznesit sipas BioBes-it real: **tokë (edhe djerr) → qira/kontrat�
 - **Raportet:** kartela e gjurmueshmërisë tani përmban parcelat, grumbulluesin, mostrat (vend, laborator, lagështi, pastërti, vendim), batch-et me rendiment dhe eksportin me klient/dokument; shtohet **Raport zonash dhe grumbulluesish**.
 - **Testet:** `tests/test_gjurmimi.sql` (zinxhiri + RLS: fermeri sheh parcelën e vet, kompania tjetër s' sheh asgjë).
 - **Analiza e biznesit:** `docs/analiza-gjurmueshmeria.md` — rrjedha reale, rolet, 15 pyetjet e gjurmueshmërisë dhe ku përgjigjen në aplikacion.
+
+## Faza 7 — llogaria e përdoruesit (v0.7) — `0008_kontaktet_e_anetareve.sql`
+Rrjedha e plotë e fjalëkalimit, siç pritet nga një sistem i vërtetë:
+
+- **Profili** (prekni roolin lart djathtas): të dhënat e llogarisë, ndryshim fjalëkalimi me verifikim të atij aktual, dalje.
+- **«Harruat fjalëkalimin?»** në ekranin e hyrjes: lidhje rivendosjeje me email që hap drejtpërdrejt ekranin *Fjalëkalim i ri* brenda aplikacionit (skema `biobesfarm://reset`), mundësi për të ngjitur lidhjen me dorë, dhe rrugë me kod SMS (e shpjeguar qartë, sepse ofruesi SMS nuk është aktiv).
+- **«Përdoruesit»**: emaili, telefoni dhe hyrja e fundit e çdo anëtari; butonat *Dërgo lidhje në email* dhe *Vendos fjalëkalim të përkohshëm*; krijimi i përdoruesit pranon email të vërtetë.
+- **Siguria:** vetëregjistrimi u mbyll (`disable_signup`), lidhjet lejohen vetëm për `biobesfarm://`, funksioni `member_contacts` hapet vetëm për adminin e kompanisë.
+- **Dokumenti:** `docs/fjalekalimi.md` — gjendja reale e serverit, teksti shqip i emailit dhe hapat për SMTP të vërtetë (pa SMTP, posta e provës së Supabase shkon vetëm te pronari i projektit).
+- **Testet:** `tests/auth_test.js` — 25 raste për trajtat e lidhjes (hash, `token_hash`, `code`, gabime skadimi, dekodim).

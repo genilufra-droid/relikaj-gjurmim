@@ -1,6 +1,6 @@
 import "./src/polyfills";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, SafeAreaView, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Linking, SafeAreaView, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { sb } from "./src/supabase";
 import { s, C, Btn, ErrorBox } from "./src/ui";
@@ -28,6 +28,9 @@ import Reminders from "./src/Reminders";
 import Import from "./src/Import";
 import Start from "./src/Start";
 import Assistant from "./src/Assistant";
+import Profile from "./src/Profile";
+import ResetPassword from "./src/auth/Reset";
+import { parseAuthUrl, isRecovery } from "./src/auth/links";
 
 const ROLE = { admin: "Administrator", staf: "Staf", grumbullues: "Grumbullues", fermer: "Fermer" };
 
@@ -42,6 +45,7 @@ export default function App() {
   const [zoneEdit, setZoneEdit] = useState(null); // zona që po ndryshohet
   const [plotId, setPlotId] = useState(null);    // kartela e parcelës e hapur
   const [importEnt, setImportEnt] = useState(null); // lloji i të dhënave për importim
+  const [recovery, setRecovery] = useState(null);  // lidhja e rivendosjes u hap
   const [err, setErr] = useState("");
 
   const loadMembers = async (sess) => {
@@ -67,8 +71,44 @@ export default function App() {
 
   useEffect(() => { loadMembers(session); }, [session]);
 
+  // Lidhjet e emailit (rivendosje fjalëkalimi) hapin aplikacionin me token në URL.
+  useEffect(() => {
+    let alive = true;
+    const handle = async (url) => {
+      const p = parseAuthUrl(url);
+      if (!p || !alive) return;
+      if (p.error) { setErr("Lidhja skadoi ose u përdor më parë. Kërkoni një lidhje të re."); return; }
+      if (p.access_token && p.refresh_token) {
+        const { error } = await sb.auth.setSession({ access_token: p.access_token, refresh_token: p.refresh_token });
+        if (!error && isRecovery(p)) setRecovery({ email: p.email || "" });
+        return;
+      }
+      if (p.token_hash) {
+        const { error } = await sb.auth.verifyOtp({ token_hash: p.token_hash, type: p.type || "recovery" });
+        if (!error && isRecovery(p)) setRecovery({ email: p.email || "" });
+        return;
+      }
+      if (p.code) {
+        const { error } = await sb.auth.exchangeCodeForSession(p.code);
+        if (!error && isRecovery(p)) setRecovery({ email: p.email || "" });
+      }
+    };
+    Linking.getInitialURL().then((url) => { if (url) handle(url); }).catch(() => {});
+    const sub = Linking.addEventListener("url", ({ url }) => handle(url));
+    return () => { alive = false; sub.remove(); };
+  }, []);
+
   if (session === undefined) return <View style={[s.screen, { justifyContent: "center" }]}><ActivityIndicator color={C.brand} /></View>;
-  if (!session) return <Login />;
+  if (recovery) {
+    return (
+      <ResetPassword
+        email={recovery.email}
+        onDone={() => setRecovery(null)}
+        onCancel={() => { setRecovery(null); sb.auth.signOut(); }}
+      />
+    );
+  }
+  if (!session) return <Login onRecovery={(email) => setRecovery({ email: String(email) })} />;
   if (err) {
     return (
       <SafeAreaView style={[s.screen, s.pad]}>
@@ -137,6 +177,7 @@ export default function App() {
   const goImport = (ent) => { setForm(null); setPlotId(null); setImportEnt(ent); setTab("importo"); };
 
   let body;
+  if (form === "profili") body = <Profile role={role} />;
   if (form === "blerje") body = <PurchaseForm cid={cid} onDone={done} />;
   else if (form === "mostra") body = <SampleForm cid={cid} onDone={done} />;
   else if (form === "magazine") body = <StockForm cid={cid} onDone={done} />;
@@ -188,10 +229,10 @@ export default function App() {
             </View>
           </View>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <View style={s.roleChip}>
+            <TouchableOpacity style={s.roleChip} onPress={() => setForm("profili")} hitSlop={8} accessibilityLabel="Profili">
               <Ionicons name="person-circle-outline" size={13} color="#EAF5E3" />
               <Text style={s.roleChipT}>{ROLE[role] || role}</Text>
-            </View>
+            </TouchableOpacity>
             {mem.length > 1 && (
               <TouchableOpacity onPress={() => { setCur(null); setForm(null); }} hitSlop={8}>
                 <Ionicons name="swap-horizontal" size={20} color="#fff" />
