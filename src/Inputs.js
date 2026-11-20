@@ -4,7 +4,7 @@ import { Alert, FlatList, ScrollView, Text, View, TouchableOpacity } from "react
 import { Ionicons } from "@expo/vector-icons";
 import { sb } from "./supabase";
 import Lookup, { LOOKUPS } from "./Lookup";
-import { s, C, Btn, Field, Card, Chip, Empty, ErrorBox, Loading, SearchBar, Segmented, Stat, FAB, fmt, num, money, today, dShort } from "./ui";
+import { s, C, Btn, Field, Card, Chip, Empty, ErrorBox, Loading, SearchBar, Segmented, Stat, FAB, fmt, num, money, today, dShort, Kpis } from "./ui";
 
 const CATS = [["seed", "Farë", "flower-outline"], ["fert", "Plehra", "nutrition-outline"], ["pest", "Trajtime", "shield-outline"],
   ["water", "Ujitje/energji", "water-outline"], ["fuel", "Karburant", "flame-outline"], ["labor", "Krah pune", "people-outline"],
@@ -36,9 +36,9 @@ export function InputForm({ cid, onDone }) {
       <Field label="Data" value={f.date} onChangeText={set("date")} placeholder="2026-11-19" />
 
       <Text style={s.label}>Lloji</Text>
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+      <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
         {CATS.map(([k, t, icon]) => (
-          <TouchableOpacity key={k} onPress={() => set("category")(k)} style={[s.chip, { paddingHorizontal: 11, paddingVertical: 8, backgroundColor: f.category === k ? C.brand : "#fff", borderWidth: 1, borderColor: f.category === k ? C.brand : C.line }]} activeOpacity={0.85}>
+          <TouchableOpacity key={k} onPress={() => set("category")(k)} style={[s.chip, { paddingHorizontal: 11, paddingVertical: 8, backgroundColor: f.category === k ? C.brand : "#fff", borderWidth: 1, borderColor: f.category === k ? C.brand : C.line, marginRight: 8, marginBottom: 8 }]} activeOpacity={0.85}>
             <Ionicons name={icon} size={13} color={f.category === k ? "#fff" : C.sub} />
             <Text style={[s.chipT, { color: f.category === k ? "#fff" : C.sub }]}>{t}</Text>
           </TouchableOpacity>
@@ -105,10 +105,10 @@ export default function Inputs({ cid, role, onNew }) {
               </View>
             </View>
 
-            <View style={[s.kpiGrid, { marginTop: 12 }]}>
+            <Kpis style={{ marginTop: 12 }}>
               <Stat icon="cash-outline" label={`Kosto ${year}`} value={money(yearTotal)} sub="inpute të vitit" tone="info" />
               <Stat icon="pricetag-outline" label="Të shfaqura" value={money(shown)} sub={`${list.length} regjistrime`} />
-            </View>
+            </Kpis>
 
             <SearchBar value={q} onChange={setQ} placeholder="Kërko input ose furnizues…" />
             <View style={{ marginTop: 10 }}>

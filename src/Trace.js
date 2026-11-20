@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { ScrollView, Text, View, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { sb } from "./supabase";
-import { s, C, Btn, Card, Chip, Empty, ErrorBox, Loading, SearchBar, Segmented, SectionTitle, Stat, fmt, money, dShort, dFull } from "./ui";
+import { s, C, Btn, Card, Chip, Empty, ErrorBox, Loading, SearchBar, Segmented, SectionTitle, Stat, fmt, money, dShort, dFull, Kpis } from "./ui";
 
 const POINT = { plot: "Në parcelë", center: "Në qendër", warehouse: "Në magazinë" };
 const METHOD = { drying: "Tharje", cleaning: "Pastrim", cutting: "Prerje", grading: "Klasifikim", oil: "Nxjerrje vaji", packing: "Paketim", other: "Tjetër" };
@@ -71,10 +71,10 @@ function LotView({ cid, code }) {
   return (
     <View>
       <Answer lot={c} />
-      <View style={[s.kpiGrid, { marginTop: 10 }]}>
+      <Kpis style={{ marginTop: 10 }}>
         <Stat icon="scale-outline" label="Sasi e njomë" value={`${fmt(c.fresh)} kg`} sub={`thatë ${fmt(c.dry)} kg`} />
         <Stat icon="pricetag-outline" label="Vlera" value={money(c.amount)} sub={`paguar ${money(c.paid)}`} tone="ok" />
-      </View>
+      </Kpis>
 
       <SectionTitle>Parcelat dhe fermerët</SectionTitle>
       {d.plots.length === 0 ? (
@@ -187,10 +187,10 @@ function PlotView({ cid, plotId }) {
   return (
     <View>
       <Answer lot={{ product: plot?.name, lot_code: plot?.code || "", plots: 1, farmers: plot?.farmers ? 1 : 0, collector: plot?.zones?.collector_name, collection_point: plot?.zones?.collection_point }} />
-      <View style={[s.kpiGrid, { marginTop: 10 }]}>
+      <Kpis style={{ marginTop: 10 }}>
         <Stat icon="resize-outline" label="Sipërfaqe" value={plot?.area_ha ? `${fmt(plot.area_ha)} ha` : "—"} sub={OWN[plot?.ownership] || ""} />
         <Stat icon="cash-outline" label="Kosto e regjistruar" value={money(total)} sub={`${acts.length} aktivitete`} tone="warn" />
-      </View>
+      </Kpis>
       <Card>
         <Row label="Fermeri" value={plot?.farmers ? `${plot.farmers.first_name} ${plot.farmers.last_name}` : ""} strong />
         <Row label="Grumbulluesi i zonës" value={plot?.zones?.collector_name} />

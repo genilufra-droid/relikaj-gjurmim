@@ -4,7 +4,7 @@ import { Alert, ScrollView, Text, View, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { sb } from "./supabase";
 import Lookup, { LOOKUPS } from "./Lookup";
-import { s, C, Btn, Field, Card, Chip, Empty, ErrorBox, Loading, Segmented, Stat, SectionTitle, money, num, today, dFull, dShort } from "./ui";
+import { s, C, Btn, Field, Card, Chip, Empty, ErrorBox, Loading, Segmented, Stat, SectionTitle, money, num, today, dFull, dShort, Kpis } from "./ui";
 
 export const OP_KINDS = [["plow", "Plugim"], ["till", "Frezim"], ["harrow", "Lesë (disk)"], ["subsoil", "Mihje"], ["level", "Nivelim"], ["mow", "Kositje"], ["haul", "Transport"], ["other", "Tjetër"]];
 export const APP_KINDS = [["fert", "Pleh"], ["pesticide", "Pesticid"], ["foliar", "Foliar"], ["irrigation", "Ujitje"], ["biological", "Biologjik"], ["other", "Tjetër"]];
@@ -12,9 +12,9 @@ const OP_LABEL = Object.fromEntries(OP_KINDS), APP_LABEL = Object.fromEntries(AP
 
 function KindPicker({ options, value, onChange }) {
   return (
-    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 6 }}>
+    <View style={{ flexDirection: "row", flexWrap: "wrap", marginTop: 6 }}>
       {options.map(([k, t]) => (
-        <TouchableOpacity key={k} onPress={() => onChange(k)} style={[s.chip, { backgroundColor: value === k ? C.brand : C.surfaceAlt, paddingHorizontal: 12, paddingVertical: 8 }]} activeOpacity={0.85}>
+        <TouchableOpacity key={k} onPress={() => onChange(k)} style={[s.chip, { backgroundColor: value === k ? C.brand : C.surfaceAlt, paddingHorizontal: 12, paddingVertical: 8, marginRight: 8, marginBottom: 8 }]} activeOpacity={0.85}>
           <Text style={[s.chipT, { color: value === k ? "#fff" : C.sub, fontWeight: "700" }]}>{t}</Text>
         </TouchableOpacity>
       ))}
@@ -142,10 +142,10 @@ export default function Operations({ cid, role, part, onPart, onNew }) {
       <Text style={s.h1}>Puna në tokë</Text>
       <Text style={[s.sub, { marginTop: 2 }]}>Punimet dhe trajtimet e çdo parcele, me kosto dhe afate pritjeje.</Text>
 
-      <View style={[s.kpiGrid, { marginTop: 12 }]}>
+      <Kpis style={{ marginTop: 12 }}>
         <Stat icon="construct-outline" label="Punime" value={`${ops.length}`} sub={money(opsCost)} tone="info" />
         <Stat icon="water-outline" label="Trajtime" value={`${apps.length}`} sub={money(appsCost)} tone="ok" />
-      </View>
+      </Kpis>
 
       <View style={{ marginTop: 14 }}>
         <Segmented options={[["punime", "Punimet"], ["trajtimet", "Trajtimet"]]} value={part} onChange={onPart} />
@@ -191,11 +191,11 @@ export default function Operations({ cid, role, part, onPart, onNew }) {
               </View>
               <Text style={{ fontWeight: "800", color: C.text }}>{money(r.cost)}</Text>
             </View>
-            <View style={{ flexDirection: "row", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
+            <ChipRow style={{ marginTop: 8 }}>
               {!!r.organic_ok && <Chip label="Organik" tone="ok" icon="leaf-outline" />}
               {r.phi_days > 0 && <Chip label={`Pritje ${r.phi_days} ditë`} tone="info" icon="time-outline" />}
               {!r.organic_ok && <Chip label="Jo organik" tone="warn" icon="alert-circle-outline" />}
-            </View>
+            </ChipRow>
           </Card>
         ))
       )}

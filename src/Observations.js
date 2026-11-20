@@ -4,7 +4,7 @@ import { Alert, FlatList, Image, ScrollView, Text, View, TouchableOpacity } from
 import { Ionicons } from "@expo/vector-icons";
 import { sb } from "./supabase";
 import Lookup, { LOOKUPS } from "./Lookup";
-import { s, C, Btn, Field, Card, Chip, Empty, ErrorBox, Loading, SearchBar, Segmented, Stat, FAB, dShort, today } from "./ui";
+import { s, C, Btn, Field, Card, Chip, Empty, ErrorBox, Loading, SearchBar, Segmented, Stat, FAB, dShort, today, Kpis } from "./ui";
 import { pickPhotoFromCamera, uploadToBucket } from "./uploads";
 
 const KINDS = [["pest", "Dëmtues", "bug-outline"], ["disease", "Sëmundje", "medkit-outline"], ["weed", "Barëra", "leaf-outline"],
@@ -49,9 +49,9 @@ export function ObservationForm({ cid, onDone }) {
       <Field label="Data" value={f.date} onChangeText={set("date")} placeholder="2026-11-19" />
 
       <Text style={s.label}>Problemi</Text>
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+      <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
         {KINDS.map(([k, t, icon]) => (
-          <TouchableOpacity key={k} onPress={() => set("kind")(k)} style={[s.chip, { paddingHorizontal: 11, paddingVertical: 8, backgroundColor: f.kind === k ? C.brand : "#fff", borderWidth: 1, borderColor: f.kind === k ? C.brand : C.line }]} activeOpacity={0.85}>
+          <TouchableOpacity key={k} onPress={() => set("kind")(k)} style={[s.chip, { paddingHorizontal: 11, paddingVertical: 8, backgroundColor: f.kind === k ? C.brand : "#fff", borderWidth: 1, borderColor: f.kind === k ? C.brand : C.line, marginRight: 8, marginBottom: 8 }]} activeOpacity={0.85}>
             <Ionicons name={icon} size={13} color={f.kind === k ? "#fff" : C.sub} />
             <Text style={[s.chipT, { color: f.kind === k ? "#fff" : C.sub }]}>{t}</Text>
           </TouchableOpacity>
@@ -136,10 +136,10 @@ export default function Observations({ cid, role, onNew }) {
               </View>
             </View>
 
-            <View style={[s.kpiGrid, { marginTop: 12 }]}>
+            <Kpis style={{ marginTop: 12 }}>
               <Stat icon="bug-outline" label="Të hapura" value={openRows.length} sub="për t'u zgjidhur" tone={openRows.length ? "warn" : "ok"} />
               <Stat icon="warning-outline" label="Me ashpërsi të lartë" value={openRows.filter((r) => r.severity >= 3).length} sub="ndërhyrje e shpejtë" tone={openRows.some((r) => r.severity >= 3) ? "danger" : "brand"} />
-            </View>
+            </Kpis>
 
             <SearchBar value={q} onChange={setQ} placeholder="Kërko parcelë ose përshkrim…" />
             <View style={{ marginTop: 10 }}>

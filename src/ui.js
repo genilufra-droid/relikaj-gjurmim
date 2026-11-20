@@ -78,7 +78,7 @@ export const s = StyleSheet.create({
   chipT: { fontSize: 11, fontWeight: "700", letterSpacing: 0.2 },
 
   kpiGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  kpi: { flex: 1, minWidth: "46%", backgroundColor: C.surface, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: C.line, ...shadowSoft },
+  kpi: { flex: 1, backgroundColor: C.surface, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: C.line, ...shadowSoft },
   kpiTop: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 },
   kpiIcon: { width: 30, height: 30, borderRadius: 9, alignItems: "center", justifyContent: "center" },
   kpiV: { fontSize: 23, fontWeight: "800", color: C.ink, letterSpacing: -0.5 },
@@ -102,8 +102,9 @@ export const s = StyleSheet.create({
   fab: { position: "absolute", right: 18, bottom: 18, backgroundColor: C.brand, borderRadius: 999, flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 18, paddingVertical: 14, shadowColor: "#0B1F10", shadowOpacity: 0.25, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 },
   fabT: { color: "#fff", fontWeight: "800", fontSize: 15 },
 
-  tabs: { backgroundColor: "#fff", borderTopWidth: 1, borderColor: C.line },
-  tab: { paddingVertical: 9, paddingHorizontal: 14, alignItems: "center", justifyContent: "center", gap: 3, minWidth: 68 },
+  tabs: { flexDirection: "row", backgroundColor: "#fff", borderTopWidth: 1, borderColor: C.line, paddingBottom: 4 },
+  tab: { flex: 1, paddingVertical: 8, alignItems: "center", justifyContent: "center" },
+  tabIc: { height: 24, justifyContent: "center" },
   tabT: { fontSize: 10.5, fontWeight: "600", color: C.mute, letterSpacing: 0.1 },
   tabTOn: { color: C.brand, fontWeight: "800" },
   tabOn: { borderTopWidth: 3, borderTopColor: C.leaf, paddingTop: 6 },
@@ -180,8 +181,34 @@ export const Stat = ({ icon, label, value, sub, tone = "brand", onPress }) => {
       {!!sub && <Text style={s.mute} numberOfLines={1}>{sub}</Text>}
     </View>
   );
-  return onPress ? <TouchableOpacity style={{ flex: 1, minWidth: "46%" }} onPress={onPress} activeOpacity={0.85}>{body}</TouchableOpacity> : <View style={{ flex: 1, minWidth: "46%" }}>{body}</View>;
+  return onPress ? <TouchableOpacity style={{ flex: 1 }} onPress={onPress} activeOpacity={0.85}>{body}</TouchableOpacity> : <View style={{ flex: 1 }}>{body}</View>;
 };
+
+// Rrjeta KPI: rreshta të qartë me dy kolona — pa «flexWrap», që Yoga t'i llogarisë saktë lartësitë.
+export const Kpis = ({ children, style }) => {
+  const items = React.Children.toArray(children).filter(Boolean);
+  const rows = [];
+  for (let i = 0; i < items.length; i += 2) rows.push(items.slice(i, i + 2));
+  return (
+    <View style={style}>
+      {rows.map((pair, i) => (
+        <View key={i} style={{ flexDirection: "row", marginBottom: i === rows.length - 1 ? 0 : 10 }}>
+          <View style={{ flex: 1, marginRight: 10 }}>{pair[0]}</View>
+          <View style={{ flex: 1 }}>{pair[1] || null}</View>
+        </View>
+      ))}
+    </View>
+  );
+};
+
+// Rresht etiketash që thyhen në shumë rreshta, me hapësirë të sigurt (pa «gap» në wrap).
+export const ChipRow = ({ children, style }) => (
+  <View style={[{ flexDirection: "row", flexWrap: "wrap" }, style]}>
+    {React.Children.toArray(children).filter(Boolean).map((c, i) => (
+      <View key={i} style={{ marginRight: 6, marginBottom: 6 }}>{c}</View>
+    ))}
+  </View>
+);
 
 export const Segmented = ({ options, value, onChange }) => (
   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.seg}>

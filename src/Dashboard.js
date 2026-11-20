@@ -3,9 +3,16 @@ import React, { useCallback, useEffect, useState } from "react";
 import { RefreshControl, ScrollView, Text, View, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { sb } from "./supabase";
-import { s, C, Card, Chip, ErrorBox, Loading, SectionTitle, Stat, fmt, money, dShort, dueLabel } from "./ui";
+import { s, C, Card, Chip, ErrorBox, Kpis, Loading, SectionTitle, Stat, fmt, money, dShort, dueLabel } from "./ui";
 
 const WDAY = ["Die", "Hën", "Mar", "Mër", "Enj", "Pre", "Sht"];
+const hero = {
+  wrap: { flexDirection: "row", backgroundColor: C.brandDark, borderRadius: 18, paddingVertical: 15, paddingHorizontal: 6, marginTop: 14 },
+  cell: { flex: 1, paddingHorizontal: 12 },
+  cellLine: { borderLeftWidth: 1, borderLeftColor: "rgba(255,255,255,0.16)" },
+  label: { color: "#A9CF97", fontSize: 10, letterSpacing: 1.1, fontWeight: "700" },
+  value: { color: "#fff", fontSize: 19, fontWeight: "800", marginTop: 4 },
+};
 const KIND_LABEL = { pest: "Dëmtues", disease: "Sëmundje", weed: "Barëra", stress: "Stres", damage: "Dëmtim", other: "Tjetër" };
 const wxIcon = (rain, tmax) => (rain >= 5 ? "rainy" : rain >= 0.5 ? "rainy-outline" : tmax >= 30 ? "sunny" : "partly-sunny");
 
@@ -58,21 +65,60 @@ export default function Dashboard({ cid, role, onGo }) {
       contentContainerStyle={s.pad}
       refreshControl={<RefreshControl refreshing={loading && !!st} onRefresh={load} tintColor={C.brand} />}
     >
-      <Text style={[s.mute, { marginBottom: 2 }]}>{todayStr}</Text>
-      <Text style={s.h1}>Pasqyra e fermës</Text>
+      <View style={[s.pageTitle, { marginBottom: 2 }]}>
+        <View style={{ flex: 1 }}>
+          <Text style={[s.mute, { marginBottom: 2 }]}>{todayStr}</Text>
+          <Text style={s.h1}>Pasqyra e fermës</Text>
+        </View>
+        <TouchableOpacity onPress={() => onGo("kujtuesit")} activeOpacity={0.85}
+          style={{ flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: C.dangerSoft, paddingHorizontal: 11, paddingVertical: 8, borderRadius: 999 }}>
+          <Ionicons name="alarm-outline" size={15} color={C.red} />
+          <Text style={{ color: C.red, fontWeight: "800", fontSize: 12.5 }}>Kujtuesit</Text>
+        </TouchableOpacity>
+      </View>
 
       {!!err && <ErrorBox message={"Statistikat nuk u ngarkuan: " + err} onRetry={load} />}
       {loading && !st && <Loading text="Po mblidhen të dhënat…" />}
 
+      {st && st.plots === 0 && (
+        <TouchableOpacity onPress={() => onGo("fillimi")} activeOpacity={0.85} style={{ marginTop: 14 }}>
+          <View style={[s.card, { backgroundColor: C.brandSoft, borderColor: C.brand, borderWidth: 1 }]}>
+            <View style={s.listRow}>
+              <View style={[s.iconCircle, { backgroundColor: "#fff" }]}>
+                <Ionicons name="rocket-outline" size={20} color={C.brand} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: C.brand, fontWeight: "800", fontSize: 15 }}>Filloni me katër hapa</Text>
+                <Text style={[s.mute, { marginTop: 2 }]}>Zona → grumbullues → fermerë → parcela. Ose importoni nga Excel.</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={C.brand} />
+            </View>
+          </View>
+        </TouchableOpacity>
+      )}
+
       {st && (
-        <View style={[s.kpiGrid, { marginTop: 14 }]}>
-          <Stat icon="map-outline" label="Sipërfaqe" value={`${fmt(st.area_ha)} ha`} sub={`${st.plots} parcela`} onPress={() => onGo("parcelat")} />
-          <Stat icon="leaf-outline" label="Kultivime aktive" value={st.cultivations_active} sub="në rritje / vjelje" tone="ok" onPress={() => onGo("kultivimet")} />
+        <View style={hero.wrap}>
+          {[
+            ["Sipërfaqe", `${fmt(st.area_ha)} ha`],
+            ["Parcela", String(st.plots ?? 0)],
+            ["Kultivime", String(st.cultivations_active ?? 0)],
+          ].map(([l, v], i) => (
+            <View key={l} style={[hero.cell, i > 0 && hero.cellLine]}>
+              <Text style={hero.label}>{l.toUpperCase()}</Text>
+              <Text style={hero.value} numberOfLines={1}>{v}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {st && (
+        <Kpis style={{ marginTop: 12 }}>
           <Stat icon="checkbox-outline" label="Detyra të hapura" value={st.tasks_open} sub={st.tasks_overdue ? `${st.tasks_overdue} të vonuara` : "asnjë e vonuar"} tone={st.tasks_overdue ? "danger" : "brand"} onPress={() => onGo("detyra")} />
           <Stat icon="bug-outline" label="Vëzhgime" value={st.observations_open} sub="të pazgjidhura" tone={st.observations_open ? "warn" : "brand"} onPress={() => onGo("vezhgime")} />
           <Stat icon="nutrition-outline" label="Inpute këtë vit" value={money(st.inputs_year)} sub="plehra, trajtime, punë" tone="info" onPress={() => onGo("inpute")} />
-          <Stat icon="basket-outline" label="Blerje këtë vit" value={money(st.purchases_year)} sub="nga fermerët" onPress={() => onGo("blerje")} />
-        </View>
+          <Stat icon="basket-outline" label="Blerje këtë vit" value={money(st.purchases_year)} sub="nga fermerët" tone="ok" onPress={() => onGo("blerje")} />
+        </Kpis>
       )}
 
       {alerts.length > 0 && <SectionTitle>Alarme</SectionTitle>}
@@ -95,10 +141,10 @@ export default function Dashboard({ cid, role, onGo }) {
           <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
             {wx.time.map((d, i) => (
               <View key={d} style={{ alignItems: "center", flex: 1 }}>
-                <Text style={[s.mute, { fontSize: 11 }]}>{i === 0 ? "Sot" : WDAY[new Date(d + "T00:00:00Z").getUTCDay()]}</Text>
-                <Ionicons name={wxIcon(wx.precipitation_sum[i], wx.temperature_2m_max[i])} size={22} color={C.brand} style={{ marginVertical: 5 }} />
-                <Text style={{ fontWeight: "800", color: C.ink, fontSize: 14 }}>{Math.round(wx.temperature_2m_max[i])}°</Text>
-                <Text style={[s.mute, { fontSize: 11 }]}>{Math.round(wx.temperature_2m_min[i])}° · {Math.round(wx.precipitation_sum[i])} mm</Text>
+                <Text style={[s.mute, { fontSize: 11 }]} numberOfLines={1}>{i === 0 ? "Sot" : WDAY[new Date(d + "T00:00:00Z").getUTCDay()]}</Text>
+                <Ionicons name={wxIcon(wx.precipitation_sum[i], wx.temperature_2m_max[i])} size={20} color={C.brand} style={{ marginVertical: 4 }} />
+                <Text style={{ fontWeight: "800", color: C.ink, fontSize: 14 }} numberOfLines={1}>{Math.round(wx.temperature_2m_max[i])}°</Text>
+                <Text style={[s.mute, { fontSize: 10.5 }]} numberOfLines={1}>{Math.round(wx.temperature_2m_min[i])}° · {Math.round(wx.precipitation_sum[i])} mm</Text>
               </View>
             ))}
           </View>

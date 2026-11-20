@@ -4,7 +4,7 @@ import { Alert, FlatList, ScrollView, Text, View, TouchableOpacity } from "react
 import { Ionicons } from "@expo/vector-icons";
 import { sb } from "./supabase";
 import Lookup, { LOOKUPS } from "./Lookup";
-import { s, C, Btn, Field, Card, Chip, Empty, ErrorBox, Loading, SearchBar, Segmented, Stat, FAB, dShort, dueLabel, today } from "./ui";
+import { s, C, Btn, Field, Card, Chip, Empty, ErrorBox, Loading, SearchBar, Segmented, Stat, FAB, dShort, dueLabel, today, Kpis } from "./ui";
 
 const TYPES = [["sow", "Mbjellje", "flower-outline"], ["irrigate", "Ujitje", "water-outline"], ["fertilize", "Plehërim", "nutrition-outline"],
   ["protect", "Mbrojtje", "shield-checkmark-outline"], ["care", "Kujdes", "hand-left-outline"], ["scout", "Vëzhgim", "eye-outline"],
@@ -37,9 +37,9 @@ export function TaskForm({ cid, onDone }) {
       <Lookup title="Parcela" cid={cid} cfg={LOOKUPS.plot} value={f.plot} onChange={set("plot")} />
 
       <Text style={s.label}>Lloji</Text>
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+      <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
         {TYPES.map(([k, t, icon]) => (
-          <TouchableOpacity key={k} onPress={() => set("type")(k)} style={[s.chip, { paddingHorizontal: 11, paddingVertical: 8, backgroundColor: f.type === k ? C.brand : "#fff", borderWidth: 1, borderColor: f.type === k ? C.brand : C.line }]} activeOpacity={0.85}>
+          <TouchableOpacity key={k} onPress={() => set("type")(k)} style={[s.chip, { paddingHorizontal: 11, paddingVertical: 8, backgroundColor: f.type === k ? C.brand : "#fff", borderWidth: 1, borderColor: f.type === k ? C.brand : C.line, marginRight: 8, marginBottom: 8 }]} activeOpacity={0.85}>
             <Ionicons name={icon} size={13} color={f.type === k ? "#fff" : C.sub} />
             <Text style={[s.chipT, { color: f.type === k ? "#fff" : C.sub }]}>{t}</Text>
           </TouchableOpacity>
@@ -111,10 +111,10 @@ export default function Tasks({ cid, role, onNew }) {
               </View>
             </View>
 
-            <View style={[s.kpiGrid, { marginTop: 12 }]}>
+            <Kpis style={{ marginTop: 12 }}>
               <Stat icon="today-outline" label="Sot" value={todayTasks.length} sub="për t'u kryer" onPress={() => setFilter("today")} />
               <Stat icon="alarm-outline" label="Të vonuara" value={overdue.length} sub="kërkojnë vëmendje" tone={overdue.length ? "danger" : "ok"} onPress={() => setFilter("overdue")} />
-            </View>
+            </Kpis>
 
             <SearchBar value={q} onChange={setQ} placeholder="Kërko detyrë…" />
             <View style={{ marginTop: 10 }}>

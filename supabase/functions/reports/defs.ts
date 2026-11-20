@@ -360,3 +360,124 @@ export function zonesReport(company: string, year: number, rows: ZoneRow[]): Rep
     g.set(tot, 6 + k, c(k === 2 ? null : v, { bold: true, fill: COLORS.grey })));
   return { name: `Zonat_${year}`, sheet: `ZONAT ${year}`, orientation: "landscape", widths, rows: g.rows, merges: g.merges };
 }
+
+// ---- 11. Raporte ERP me filtra: tabelë e përbashkët, kokë me periudhë dhe filtra ----
+export interface Col { label: string; width: number; align?: "l" | "c" | "r" }
+export interface TableSpec {
+  name: string; sheet: string; title: string; subtitle?: string;
+  cols: Col[]; rows: (string | number | null)[][];
+  totals?: (string | number | null)[]; totalsLabel?: string;
+}
+export function tableReport(o: TableSpec): Report {
+  const NC = o.cols.length;
+  const widths = o.cols.map((c) => c.width);
+  const g = new Grid(NC);
+  const t1 = g.row(31.5), t2 = g.row(31.5);
+  g.merge(t1, 0, t2, NC - 1, { v: o.title.toUpperCase(), bold: true, size: 19, align: "c", valign: "m", fill: COLORS.green });
+  if (o.subtitle) {
+    const sr = g.row(22);
+    g.merge(sr, 0, sr, NC - 1, { v: o.subtitle, size: 10.5, align: "c", valign: "m", wrap: true });
+  }
+  g.blank(6);
+  const c = (v: string | number | null | undefined, x: Partial<Cell> = {}): Cell => {
+    const vv = v ?? "";
+    return { v: vv, size: 10.5, border: true, valign: "m", wrap: true, fmt: typeof vv === "number" ? NUM : undefined, ...x };
+  };
+  const h = g.row(34, true);
+  o.cols.forEach((col, i) =>
+    g.set(h, i, { v: col.label, bold: true, size: 10, align: "c", valign: "m", wrap: true, border: true, fill: COLORS.green }));
+  if (o.rows.length === 0) {
+    const r = g.row(26);
+    g.merge(r, 0, r, NC - 1, { v: "Asnjë të dhënë për filtrat e zgjedhur.", size: 11, italic: true, align: "c", valign: "m", border: true });
+  }
+  for (const row of o.rows) {
+    const r = g.row(21);
+    row.forEach((v, i) => g.set(r, i, c(v, { align: o.cols[i]?.align ?? "l" })));
+  }
+  if (o.totals && o.rows.length) {
+    const tr = g.row(23);
+    o.totals.forEach((v, i) => {
+      if (v === "__label__") {
+        g.set(tr, i, c(o.totalsLabel ?? "GJITHSEJ", { bold: true, fill: COLORS.grey, align: "r" }));
+      } else {
+        g.set(tr, i, c(v, { bold: true, fill: COLORS.grey, align: typeof v === "number" ? "r" : "c" }));
+      }
+    });
+  }
+  const foot = g.row(20);
+  g.merge(foot, 0, foot, NC - 1, { v: `${o.rows.length} rreshta · BioBes Farm`, size: 9, align: "r", italic: true });
+  return { name: safeName(o.name), sheet: o.sheet, orientation: "landscape", widths, rows: g.rows, merges: g.merges };
+}
+
+// ---- 12. Kartela e një parcele: profili, historiku, kostot dhe korrjet ----
+export interface PlotInfo {
+  name: string; code?: string | null; area_ha: number; ownership?: string | null; status?: string | null;
+  farmer?: string | null; zone?: string | null; collector?: string | null; point?: string | null; altitude?: number | null;
+  organic?: boolean | null; lat?: number | null; lng?: number | null;
+}
+export interface PlotAct { date: string; kind: string; detail: string; who?: string | null; amount: number; note?: string | null }
+export interface PlotHarvest { date: string; lot_code: string; qty_fresh: number; qty_dry: number; amount: number }
+export function plotReport(o: { company: string; plot: PlotInfo; activities: PlotAct[]; harvests: PlotHarvest[]; docs: number }): Report {
+  const OWN: Record<string, string> = { owned: "Në pronësi", leased: "Me qira", wild: "E egër / djerr" };
+  const STA: Record<string, string> = { active: "Aktive", fallow: "Djerr", resting: "Në pushim" };
+  const NC = 6;
+  const widths = [16, 26, 22, 26, 14, 16];
+  const g = new Grid(NC);
+  const t1 = g.row(30), t2 = g.row(30);
+  g.merge(t1, 0, t2, NC - 1, { v: "KARTELA E PARCELËS", bold: true, size: 19, align: "c", valign: "m", fill: COLORS.green });
+  const sub = g.row(22);
+  g.merge(sub, 0, sub, NC - 1, { v: `${o.company}  ·  ${o.plot.code ? o.plot.code + " · " : ""}${o.plot.name}`, size: 11, align: "c", valign: "m" });
+  g.blank(6);
+  const c = (v: string | number | null | undefined, x: Partial<Cell> = {}): Cell => {
+    const vv = v ?? "";
+    return { v: vv, size: 10.5, border: true, valign: "m", wrap: true, fmt: typeof vv === "number" ? NUM : undefined, ...x };
+  };
+  const kv = (pairs: [string, string | number | null][]) => {
+    for (const [k, v] of pairs) {
+      const r = g.row(20);
+      g.merge(r, 0, r, 1, c(k, { bold: true, fill: COLORS.grey }));
+      g.merge(r, 2, r, 5, c(v));
+    }
+  };
+  kv([
+    ["Sipërfaqja", `${num(o.plot.area_ha)} ha`],
+    ["Pronësia / statusi", `${OWN[o.plot.ownership ?? ""] ?? "—"} · ${STA[o.plot.status ?? ""] ?? "—"}`],
+    ["Fermeri", o.plot.farmer ?? "—"],
+    ["Zona / grumbulluesi", [o.plot.zone, o.plot.collector, o.plot.point].filter(Boolean).join(" · ") || "—"],
+    ["Lartësia / organike", `${o.plot.altitude ?? "—"} m · ${o.plot.organic ? "organike" : "jo organike"}`],
+    ["Koordinatat", o.plot.lat && o.plot.lng ? `${o.plot.lat}, ${o.plot.lng}` : "—"],
+    ["Dokumente", String(o.docs)],
+  ]);
+  g.blank(6);
+  const table = (title: string, heads: [string, number][], body: Cell[][]) => {
+    const hr = g.row(22);
+    g.merge(hr, 0, hr, NC - 1, { v: title, bold: true, size: 11.5, fill: COLORS.grey, valign: "m" });
+    const cols: [number, number][] = [];
+    let x = 0;
+    for (const [, span] of heads) { cols.push([x, x + span - 1]); x += span; }
+    const rh = g.row(26, true);
+    heads.forEach(([label], i) => g.merge(rh, cols[i][0], rh, cols[i][1],
+      { v: label, bold: true, size: 10, align: "c", valign: "m", wrap: true, border: true, fill: COLORS.green }));
+    for (const row of body) {
+      const r = g.row(20);
+      row.forEach((cell, i) => {
+        const [a, b] = cols[i] ?? [NC - 1, NC - 1];
+        if (b > a) g.merge(r, a, r, b, cell); else g.set(r, a, cell);
+      });
+    }
+  };
+  table("1. KORRJET E PARCELËS", [["Data", 1], ["Loti", 1], ["Njomë (kg)", 1], ["Thatë (kg)", 1], ["Shuma (lekë)", 2]],
+    o.harvests.length
+      ? [...o.harvests.map((h) => [c(dFull(h.date)), c(h.lot_code, { size: 9 }), c(num(h.qty_fresh)), c(num(h.qty_dry)), c(num(h.amount))]),
+         [c("Gjithsej", { bold: true, fill: COLORS.grey }), c("", { fill: COLORS.grey }), c(sum(o.harvests, "qty_fresh"), { bold: true, fill: COLORS.grey }),
+          c(sum(o.harvests, "qty_dry"), { bold: true, fill: COLORS.grey }), c(sum(o.harvests, "amount"), { bold: true, fill: COLORS.grey })]]
+      : [[c("Asnjë korrje e regjistruar"), c(""), c(""), c(""), c("")]]);
+  table("2. AKTIVITETI I PARCELËS", [["Data", 1], ["Lloji", 1], ["Detaji", 2], ["Kush", 1], ["Kosto (lekë)", 1]],
+    o.activities.length
+      ? o.activities.map((a) => [c(dFull(a.date)), c(a.kind), c(a.detail + (a.note ? ` — ${a.note}` : "")), c(a.who ?? ""), c(num(a.amount))])
+      : [[c("Asnjë aktivitet i regjistruar"), c(""), c(""), c(""), c("")]]);
+  const tot = g.row(24);
+  g.merge(tot, 0, tot, 3, c(`Kosto totale e aktiviteteve · ${o.activities.length} zëra`, { bold: true, fill: COLORS.grey }));
+  g.merge(tot, 4, tot, 5, c(sum(o.activities, "amount"), { bold: true, fill: COLORS.grey, align: "r" }));
+  return { name: `Parcela_${safeName(o.plot.code || o.plot.name)}`, sheet: safeName(o.plot.code || o.plot.name).slice(0, 28), orientation: "portrait", widths, rows: g.rows, merges: g.merges };
+}

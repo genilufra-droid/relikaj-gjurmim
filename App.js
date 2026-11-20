@@ -23,6 +23,10 @@ import Trace from "./src/Trace";
 import Operations, { OperationForm, ApplicationForm } from "./src/Operations";
 import Processing, { BatchForm } from "./src/Processing";
 import Zones, { ZoneForm } from "./src/Zones";
+import PlotDetail from "./src/PlotDetail";
+import Reminders from "./src/Reminders";
+import Import from "./src/Import";
+import Start from "./src/Start";
 
 const ROLE = { admin: "Administrator", staf: "Staf", grumbullues: "Grumbullues", fermer: "Fermer" };
 
@@ -35,6 +39,8 @@ export default function App() {
   const [land, setLand] = useState("qira");      // nënndarja e «Toka»
   const [work, setWork] = useState("punime");    // nënndarja e «Puna në tokë»
   const [zoneEdit, setZoneEdit] = useState(null); // zona që po ndryshohet
+  const [plotId, setPlotId] = useState(null);    // kartela e parcelës e hapur
+  const [importEnt, setImportEnt] = useState(null); // lloji i të dhënave për importim
   const [err, setErr] = useState("");
 
   const loadMembers = async (sess) => {
@@ -123,11 +129,11 @@ export default function App() {
     ["gjurmimi", "Gjurmimi", "git-branch-outline"],
     ["modulet", "Modulet", "grid-outline"],
     ["raporte", "Raporte", "bar-chart-outline"],
-    ["dil", "Dil", "log-out-outline"],
   ];
   const PRIMARY = ["pasqyra", "parcelat", "gjurmimi", "modulet", "raporte"];
   const done = () => setForm(null);
-  const go = (k) => { setForm(null); setTab(k); };
+  const go = (k) => { setForm(null); setPlotId(null); setImportEnt(null); setTab(k); };
+  const goImport = (ent) => { setForm(null); setPlotId(null); setImportEnt(ent); setTab("importo"); };
 
   let body;
   if (form === "blerje") body = <PurchaseForm cid={cid} onDone={done} />;
@@ -144,10 +150,12 @@ export default function App() {
   else if (form === "trajtim") body = <ApplicationForm cid={cid} onDone={done} />;
   else if (form === "batch") body = <BatchForm cid={cid} onDone={done} />;
   else if (form === "zone") body = <ZoneForm cid={cid} zone={zoneEdit} onDone={() => { setZoneEdit(null); done(); }} />;
+  else if (plotId) body = <PlotDetail cid={cid} plotId={plotId} onGo={go} onBack={() => setPlotId(null)} />;
+  else if (tab === "kujtuesit") body = <Reminders key={cid} cid={cid} onGo={go} />;
   else if (tab === "modulet") body = <Hub role={role} onGo={go} />;
   else if (tab === "gjurmimi") body = <Trace key={cid} cid={cid} />;
   else if (tab === "pasqyra") body = <Dashboard key={cid} cid={cid} role={role} onGo={go} />;
-  else if (tab === "parcelat") body = <Plots key={cid} cid={cid} role={role} onNew={() => setForm("parcela")} onOpen={go} />;
+  else if (tab === "parcelat") body = <Plots key={cid} cid={cid} role={role} onNew={() => setForm("parcela")} onOpen={(id) => setPlotId(id)} />;
   else if (tab === "kultivimet") body = <Cultivations key={cid} cid={cid} role={role} onNew={() => setForm("kultivim")} />;
   else if (tab === "detyra") body = <Tasks key={cid} cid={cid} role={role} onNew={() => setForm("detyre")} />;
   else if (tab === "vezhgime") body = <Observations key={cid} cid={cid} role={role} onNew={() => setForm("vezhgim")} />;
@@ -160,6 +168,8 @@ export default function App() {
   else if (tab === "blerje") body = <Purchases key={cid} cid={cid} role={role} onNew={() => setForm("blerje")} />;
   else if (tab === "magazine") body = <Stock key={cid} cid={cid} role={role} onNew={() => setForm("magazine")} />;
   else if (tab === "mostra") body = <Samples key={cid} cid={cid} role={role} onNew={() => setForm("mostra")} />;
+  else if (tab === "importo") body = <Import key={cid} cid={cid} preset={importEnt} onGo={go} />;
+  else if (tab === "fillimi") body = <Start key={cid} cid={cid} role={role} onGo={go} onForm={(k) => setForm(k)} onImport={goImport} />;
   else if (tab === "raporte") body = <Reports cid={cid} />;
   else body = <Users cid={cid} me={session.user.id} />;
 
@@ -185,11 +195,23 @@ export default function App() {
                 <Ionicons name="swap-horizontal" size={20} color="#fff" />
               </TouchableOpacity>
             )}
+            <TouchableOpacity onPress={() => sb.auth.signOut()} hitSlop={10} accessibilityLabel="Dil">
+              <Ionicons name="log-out-outline" size={20} color="#fff" />
+            </TouchableOpacity>
           </View>
         </View>
       </View>
 
-      {!form && !PRIMARY.includes(tab) && (
+      {!form && plotId && (
+        <View style={{ backgroundColor: C.bg, paddingHorizontal: 16, paddingTop: 8 }}>
+          <TouchableOpacity style={s.backRow} onPress={() => setPlotId(null)} hitSlop={8}>
+            <Ionicons name="chevron-back" size={18} color={C.brand} />
+            <Text style={s.backT}>Parcelat</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {!form && !plotId && !PRIMARY.includes(tab) && (
         <View style={{ backgroundColor: C.bg, paddingHorizontal: 16, paddingTop: 8 }}>
           <TouchableOpacity style={s.backRow} onPress={() => go("modulet")} hitSlop={8}>
             <Ionicons name="chevron-back" size={18} color={C.brand} />
@@ -209,17 +231,19 @@ export default function App() {
 
       <View style={{ flex: 1, backgroundColor: C.bg }}>{body}</View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.tabs} contentContainerStyle={{ paddingHorizontal: 4 }}>
-        {TABS.map(([k, t, icon]) => {
-          const on = (tab === k || (k === "modulet" && !PRIMARY.includes(tab) && k !== "dil")) && !form && k !== "dil";
+      <View style={s.tabs}>
+        {TABS.map(([k, title, icon]) => {
+          const on = k !== "dil" && (tab === k || (k === "modulet" && !PRIMARY.includes(tab)));
           return (
             <TouchableOpacity key={k} style={[s.tab, on && s.tabOn]} onPress={() => (k === "dil" ? sb.auth.signOut() : go(k))} activeOpacity={0.8}>
-              <Ionicons name={icon} size={20} color={on ? C.brand : C.mute} />
-              <Text style={[s.tabT, on && s.tabTOn]}>{t}</Text>
+              <View style={s.tabIc}>
+                <Ionicons name={icon} size={21} color={on ? C.brand : C.mute} />
+              </View>
+              <Text style={[s.tabT, on && s.tabTOn]} numberOfLines={1}>{title}</Text>
             </TouchableOpacity>
           );
         })}
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }

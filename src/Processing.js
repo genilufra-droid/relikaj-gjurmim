@@ -4,7 +4,7 @@ import { Alert, ScrollView, Text, View, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { sb } from "./supabase";
 import Lookup, { LOOKUPS } from "./Lookup";
-import { s, C, Btn, Field, Card, Chip, Empty, ErrorBox, Loading, Stat, SectionTitle, fmt, money, num, today, dFull } from "./ui";
+import { s, C, Btn, Field, Card, Chip, Empty, ErrorBox, Loading, Stat, SectionTitle, fmt, money, num, today, dFull, Kpis } from "./ui";
 
 export const BATCH_METHODS = [["drying", "Tharje"], ["cleaning", "Pastrim"], ["cutting", "Prerje"], ["grading", "Klasifikim"], ["oil", "Nxjerrje vaji"], ["packing", "Paketim"], ["other", "Tjetër"]];
 const LABEL = Object.fromEntries(BATCH_METHODS);
@@ -45,18 +45,18 @@ export function BatchForm({ cid, onDone }) {
       <Field label="Kodi i batch-it" value={f.code} onChangeText={set("code")} autoCapitalize="characters" />
       <Field label="Data (VVVV-MM-DD)" value={f.date} onChangeText={set("date")} />
       <Text style={s.label}>Metoda</Text>
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 6 }}>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", marginTop: 6 }}>
         {BATCH_METHODS.map(([k, t]) => (
-          <TouchableOpacity key={k} onPress={() => set("method")(k)} style={[s.chip, { backgroundColor: f.method === k ? C.brand : C.surfaceAlt, paddingHorizontal: 12, paddingVertical: 8 }]}>
+          <TouchableOpacity key={k} onPress={() => set("method")(k)} style={[s.chip, { backgroundColor: f.method === k ? C.brand : C.surfaceAlt, paddingHorizontal: 12, paddingVertical: 8, marginRight: 8, marginBottom: 8 }]}>
             <Text style={[s.chipT, { color: f.method === k ? "#fff" : C.sub, fontWeight: "700" }]}>{t}</Text>
           </TouchableOpacity>
         ))}
       </View>
       <Field label="Loti burim (kodi i gjurmueshmërisë)" value={f.source} onChangeText={set("source")} autoCapitalize="characters" placeholder="W010F/1a-I-115-26" />
       {lots.length > 0 && !f.source && (
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", marginBottom: 8 }}>
           {lots.slice(0, 6).map((l) => (
-            <TouchableOpacity key={l.lot_code} onPress={() => set("source")(l.lot_code)} style={[s.chip, { backgroundColor: C.brandSoft }]}>
+            <TouchableOpacity key={l.lot_code} onPress={() => set("source")(l.lot_code)} style={[s.chip, { backgroundColor: C.brandSoft, marginRight: 6, marginBottom: 6 }]}>
               <Text style={[s.chipT, { color: C.brand }]}>{l.lot_code}</Text>
             </TouchableOpacity>
           ))}
@@ -95,10 +95,10 @@ export default function Processing({ cid, role, onNew }) {
     <ScrollView style={s.screen} contentContainerStyle={[s.pad, { paddingBottom: 96 }]}>
       <Text style={s.h1}>Përpunimi</Text>
       <Text style={[s.sub, { marginTop: 2 }]}>Tharje, pastrim, prerje, klasifikim, vaj dhe paketim në qendër.</Text>
-      <View style={[s.kpiGrid, { marginTop: 12 }]}>
+      <Kpis style={{ marginTop: 12 }}>
         <Stat icon="download-outline" label="Hyrje" value={`${fmt(totalIn)} kg`} sub={`${rows.length} batche`} tone="info" />
         <Stat icon="trending-up-outline" label="Rendiment mesatar" value={`${fmt(avg)}%`} sub={`dalje ${fmt(totalOut)} kg`} tone={avg >= 85 ? "ok" : "warn"} />
-      </View>
+      </Kpis>
       {!!err && <ErrorBox message={err} onRetry={load} />}
       {loading && <Loading />}
       {canWrite && <Btn title="+ Batch i ri" icon="add" onPress={onNew} />}

@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { ScrollView, Text, View, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { sb } from "./supabase";
-import { s, C, Btn, Field, Card, Chip, Empty, ErrorBox, Loading, SearchBar, Stat, SectionTitle, fmt, money } from "./ui";
+import { s, C, Btn, Field, Card, Chip, Empty, ErrorBox, Loading, SearchBar, Stat, SectionTitle, fmt, money, Kpis } from "./ui";
 
 export function ZoneForm({ cid, zone, onDone }) {
   const [f, setF] = useState({
@@ -68,10 +68,10 @@ export default function Zones({ cid, role, onNew, onEdit }) {
     <ScrollView style={s.screen} contentContainerStyle={[s.pad, { paddingBottom: 96 }]}>
       <Text style={s.h1}>Zonat dhe grumbulluesit</Text>
       <Text style={[s.sub, { marginTop: 2 }]}>Kush mbulon cilat parcela dhe sa grumbullohet në secilën zonë.</Text>
-      <View style={[s.kpiGrid, { marginTop: 12 }]}>
+      <Kpis style={{ marginTop: 12 }}>
         <Stat icon="people-outline" label="Grumbullues" value={`${rows.length}`} sub={`${totalPlots} parcela`} />
         <Stat icon="scale-outline" label="Grumbulluar (viti)" value={`${fmt(totalKg)} kg`} sub="thatë" tone="ok" />
-      </View>
+      </Kpis>
       <SearchBar value={q} onChange={setQ} placeholder="Zonë, grumbullues ose pikë…" />
       {!!err && <ErrorBox message={err} onRetry={load} />}
       {loading && <Loading />}
@@ -88,12 +88,12 @@ export default function Zones({ cid, role, onNew, onEdit }) {
             </View>
             {!!z.fair_wild && <Chip label="Fair Wild" tone="ok" />}
           </View>
-          <View style={{ flexDirection: "row", gap: 16, marginTop: 9, flexWrap: "wrap" }}>
+          <ChipRow style={{ marginTop: 9 }}>
             <Text style={s.mute}>{z.plots} parcela</Text>
             <Text style={s.mute}>{z.farmers} fermerë</Text>
             <Text style={s.mute}>{fmt(z.area_ha)} ha</Text>
             <Text style={[s.mute, { color: C.text, fontWeight: "700" }]}>{fmt(z.dry_year)} kg / {money(z.amount_year)}</Text>
-          </View>
+          </ChipRow>
         </Card>
       ))}
       {canWrite && rows.length > 0 && (
