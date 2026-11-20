@@ -41,7 +41,10 @@ export async function buildPdf(rep: Report): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   const reg = await pdf.embedFont(StandardFonts.Helvetica), bold = await pdf.embedFont(StandardFonts.HelveticaBold);
   const regT = await pdf.embedFont(StandardFonts.TimesRoman), boldT = await pdf.embedFont(StandardFonts.TimesRomanBold);
-  const [PW, PH] = rep.orientation === "landscape" ? [841.89, 595.28] : [595.28, 841.89];
+  const serif = (c: Cell) => c.fontName ? /cambria|times|georgia|garamond/i.test(c.fontName) : c.font === "times";
+  const pick = (c: Cell) => serif(c) ? (c.bold ? boldT : regT) : (c.bold ? bold : reg);
+  const [PW0, PH0] = rep.paper === "A3" ? [1190.55, 841.89] : [841.89, 595.28];
+  const [PW, PH] = rep.orientation === "landscape" ? [PW0, PH0] : [PH0, PW0];
   const margin = 28, usableW = PW - 2 * margin, usableH = PH - 2 * margin - 14;
   const total = rep.widths.reduce((a, b) => a + b, 0);
   const scale = Math.min(1, usableW / (total * PT_PER_CHAR));
@@ -64,7 +67,7 @@ export async function buildPdf(rep: Report): Promise<Uint8Array> {
       const m = mergeAt.get(`${r},${i}`);
       const w = colW.slice(i, (m ? m[3] : i) + 1).reduce((a, b) => a + b, 0) - 6;
       const size = (c.size ?? 11) * fscale;
-      const f = c.font === "times" ? (c.bold ? boldT : regT) : (c.bold ? bold : reg);
+      const f = pick(c);
       h = Math.max(h, wrapText(safe(text(c)), f, size, w).length * size * 1.2 + 6);
     });
     return h;
@@ -83,11 +86,17 @@ export async function buildPdf(rep: Report): Promise<Uint8Array> {
       const w = m ? colW.slice(i, m[3] + 1).reduce((a, b) => a + b, 0) : w0;
       const hh = m ? heights.slice(r, m[2] + 1).reduce((a, b) => a + b, 0) : h;
       if (c.fill) page.drawRectangle({ x, y: y - hh, width: w, height: hh, color: hex(c.fill) });
-      if (c.border) page.drawRectangle({ x, y: y - hh, width: w, height: hh, borderColor: rgb(0, 0, 0), borderWidth: 0.6 });
+      if (c.sides !== undefined) {
+        const ln = (x1: number, y1: number, x2: number, y2: number) => page.drawLine({ start: { x: x1, y: y1 }, end: { x: x2, y: y2 }, thickness: 0.6, color: rgb(0, 0, 0) });
+        if (c.sides.includes("l")) ln(x, y, x, y - hh);
+        if (c.sides.includes("r")) ln(x + w, y, x + w, y - hh);
+        if (c.sides.includes("t")) ln(x, y, x + w, y);
+        if (c.sides.includes("b")) ln(x, y - hh, x + w, y - hh);
+      } else if (c.border) page.drawRectangle({ x, y: y - hh, width: w, height: hh, borderColor: rgb(0, 0, 0), borderWidth: 0.6 });
       const t = safe(text(c));
       if (t) {
         const size = (c.size ?? 11) * fscale;
-        const f = c.font === "times" ? (c.bold ? boldT : regT) : (c.bold ? bold : reg);
+        const f = pick(c);
         const lines = c.wrap ? wrapText(t, f, size, w - 6) : [t];
         const blockH = lines.length * size * 1.2;
         let ty = c.valign === "t" ? y - 3 - size : y - (hh - blockH) / 2 - size * 0.95;
@@ -95,7 +104,7 @@ export async function buildPdf(rep: Report): Promise<Uint8Array> {
           const tw = f.widthOfTextAtSize(ln, size);
           const al = c.align ?? (typeof c.v === "number" ? "r" : "l");
           const tx = al === "c" ? x + (w - tw) / 2 : al === "r" ? x + w - tw - 3 : x + 3;
-          page.drawText(ln, { x: tx, y: ty, size, font: f, color: rgb(0, 0, 0) });
+          page.drawText(ln, { x: tx, y: ty, size, font: f, color: c.color ? hex(c.color) : rgb(0, 0, 0) });
           ty -= size * 1.2;
         }
       }

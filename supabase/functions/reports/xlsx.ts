@@ -26,18 +26,19 @@ class Registry<T> {
 }
 
 export async function buildXlsx(rep: Report): Promise<Uint8Array> {
-  const fonts = new Registry<{ n: string; sz: number; b: boolean; i: boolean }>();
+  const fonts = new Registry<{ n: string; sz: number; b: boolean; i: boolean; c?: string }>();
   const fills = new Registry<string>(2);          // 0 = asnjë, 1 = gray125 (rezervuar nga Excel)
   const numFmts = new Registry<string>(164);
+  const borders = new Registry<string>(2);          // 0 = asnjë, 1 = të katër anët (të rezervuara)
   const xfs = new Registry<{ f: number; fi: number; b: number; nf: number; h: string; v: string; w: boolean }>();
   fonts.id({ n: "Calibri", sz: 11, b: false, i: false });
   xfs.id({ f: 0, fi: 0, b: 0, nf: 0, h: "", v: "", w: false });
 
   const styleOf = (c: Cell): number => {
-    const f = fonts.id({ n: c.font === "times" ? "Times New Roman" : "Calibri", sz: c.size ?? 11, b: !!c.bold, i: !!c.italic });
+    const f = fonts.id({ n: c.fontName ?? (c.font === "times" ? "Times New Roman" : "Calibri"), sz: c.size ?? 11, b: !!c.bold, i: !!c.italic, ...(c.color ? { c: c.color } : {}) });
     const fi = c.fill ? fills.id(c.fill) : 0;
     const nf = c.fmt ? numFmts.id(c.fmt) : 0;
-    return xfs.id({ f, fi, b: c.border ? 1 : 0, nf, h: { l: "left", c: "center", r: "right" }[c.align ?? "l"], v: c.valign === "t" ? "top" : "center", w: !!c.wrap });
+    return xfs.id({ f, fi, b: c.sides !== undefined ? (c.sides === "lrtb" ? 1 : c.sides ? borders.id(c.sides) : 0) : c.border ? 1 : 0, nf, h: { l: "left", c: "center", r: "right" }[c.align ?? "l"], v: c.valign === "t" ? "top" : "center", w: !!c.wrap });
   };
 
   let sheetRows = "";
@@ -59,14 +60,14 @@ export async function buildXlsx(rep: Report): Promise<Uint8Array> {
     : "";
   const lastRef = colName(Math.max(0, rep.widths.length - 1)) + rep.rows.length;
   const sheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><dimension ref="A1:${lastRef}"/><sheetViews><sheetView workbookViewId="0" showGridLines="0"/></sheetViews><sheetFormatPr defaultRowHeight="15"/><cols>${cols}</cols><sheetData>${sheetRows}</sheetData>${merges}<pageMargins left="0.4" right="0.4" top="0.5" bottom="0.5" header="0.3" footer="0.3"/><pageSetup paperSize="9" orientation="${rep.orientation}" fitToWidth="1" fitToHeight="0"/></worksheet>`;
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetPr><pageSetUpPr fitToPage="${rep.scalePct ? 0 : 1}"/></sheetPr><dimension ref="A1:${lastRef}"/><sheetViews><sheetView workbookViewId="0" showGridLines="0"/></sheetViews><sheetFormatPr defaultRowHeight="15"/><cols>${cols}</cols><sheetData>${sheetRows}</sheetData>${merges}<pageMargins left="0.4" right="0.4" top="0.5" bottom="0.5" header="0.3" footer="0.3"/><pageSetup paperSize="${rep.paper === "A3" ? 8 : 9}" orientation="${rep.orientation}"${rep.scalePct ? ` scale="${rep.scalePct}"` : ` fitToWidth="1" fitToHeight="0"`}/></worksheet>`;
 
   const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">${
     numFmts.items.length ? `<numFmts count="${numFmts.items.length}">${numFmts.items.map((f, i) => `<numFmt numFmtId="${164 + i}" formatCode="${esc(f)}"/>`).join("")}</numFmts>` : ""
-  }<fonts count="${fonts.items.length}">${fonts.items.map((f) => `<font>${f.b ? "<b/>" : ""}${f.i ? "<i/>" : ""}<sz val="${f.sz}"/><name val="${f.n}"/></font>`).join("")}</fonts><fills count="${fills.items.length + 2}"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>${
+  }<fonts count="${fonts.items.length}">${fonts.items.map((f) => `<font>${f.b ? "<b/>" : ""}${f.i ? "<i/>" : ""}<sz val="${f.sz}"/>${f.c ? `<color rgb="FF${f.c}"/>` : ""}<name val="${f.n}"/></font>`).join("")}</fonts><fills count="${fills.items.length + 2}"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>${
     fills.items.map((c) => `<fill><patternFill patternType="solid"><fgColor rgb="FF${c}"/><bgColor indexed="64"/></patternFill></fill>`).join("")
-  }</fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color auto="1"/></left><right style="thin"><color auto="1"/></right><top style="thin"><color auto="1"/></top><bottom style="thin"><color auto="1"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="${xfs.items.length}">${
+  }</fills><borders count="${borders.items.length + 2}"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color auto="1"/></left><right style="thin"><color auto="1"/></right><top style="thin"><color auto="1"/></top><bottom style="thin"><color auto="1"/></bottom><diagonal/></border>${borders.items.map((s) => `<border>${[["l","left"],["r","right"],["t","top"],["b","bottom"]].map(([k, n]) => s.includes(k) ? `<${n} style="thin"><color auto="1"/></${n}>` : `<${n}/>`).join("")}<diagonal/></border>`).join("")}</borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="${xfs.items.length}">${
     xfs.items.map((x) => `<xf numFmtId="${x.nf}" fontId="${x.f}" fillId="${x.fi}" borderId="${x.b}" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="${x.h || "general"}" vertical="${x.v || "bottom"}"${x.w ? ' wrapText="1"' : ""}/></xf>`).join("")
   }</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
 

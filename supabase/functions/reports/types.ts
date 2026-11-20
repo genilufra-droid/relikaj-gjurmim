@@ -11,6 +11,9 @@ export interface Cell {
   wrap?: boolean;
   fmt?: string;             // format numri në Excel, p.sh. "#,##0.00" ose "dd/mm/yyyy"
   font?: "calibri" | "times";
+  fontName?: string;        // emri i plotë i shkronjës (p.sh. Cambria, Verdana) — për kopje 1:1 të Excel-it
+  color?: string;           // ngjyra e tekstit hex pa #
+  sides?: string;           // korniza sipas anëve: kombinim i l, r, t, b (mbizotëron «border»)
 }
 export interface Row { height?: number; cells: Cell[]; header?: boolean }   // header: përsëritet në çdo faqe PDF
 export interface Report {
@@ -19,6 +22,8 @@ export interface Report {
   orientation: "portrait" | "landscape";
   widths: number[];                   // gjerësitë e kolonave në njësi Excel (karaktere)
   rows: Row[];
+  paper?: "A3" | "A4";                // parazgjedhja A4
+  scalePct?: number;                  // shkallë fikse në vend të «përshtat në gjerësi»
   merges: [number, number, number, number][];   // [rreshti1, kolona1, rreshti2, kolona2], me bazë 0
 }
 export const COLORS = { green: "C6E0B4", yellow: "FFFF00", grey: "F2F2F2" };

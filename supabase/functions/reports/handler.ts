@@ -2,6 +2,7 @@
 import { buildXlsx } from "./xlsx.ts";
 import { buildPdf } from "./pdf.ts";
 import { farmerReport, growersReport, inputsReport, lotSheetReport, plotReport, plotsReport, summaryReport, tableReport, tasksReport, traceReport, zonesReport } from "./defs.ts";
+import { kultivimeReplica } from "./replicas.ts";
 import type { Report } from "./types.ts";
 
 // Pjesa e klientit Supabase që përdorim (lehtëson testimin)
@@ -309,16 +310,8 @@ export async function makeReport(sb: Sb, r: Req): Promise<Report> {
         mine.reduce((a: number, b: any) => a + Number(b.qty_fresh ?? 0), 0), mine.reduce((a: number, b: any) => a + Number(b.qty_dry ?? 0), 0),
         exp, stock, last ? `${last.export_to} ${last.export_date ? dShort(last.export_date) : ""}`.trim() : ""];
     });
-    const tot = (i: number) => rows.reduce((a: number, x: any) => a + Number(x[i] ?? 0), 0);
-    return tableReport({
-      name: `Kultivime_${year}`, sheet: `KULTIVIME ${year}`, title: `Kultivime ${co.name} ${year}`,
-      subtitle: `${rows.length} kultivime · ${tot(6).toFixed(0)} kg të thata të mbledhura`,
-      cols: [{ label: "Parcela", width: 11 }, { label: "Produkti", width: 26 }, { label: "Sasi e miratuar (kg)", width: 14, align: "r" },
-        { label: "Fillimi i vjeljes", width: 13 }, { label: "Mbarimi i vjeljes", width: 13 }, { label: "Mbledhur njomë (kg)", width: 14, align: "r" },
-        { label: "Mbledhur thatë (kg)", width: 14, align: "r" }, { label: "Eksportuar (kg)", width: 13, align: "r" }, { label: "Stoku (kg)", width: 12, align: "r" },
-        { label: "Klienti / data", width: 20 }],
-      rows, totals: ["__label__", "", tot(2), "", "", tot(5), tot(6), tot(7), tot(8), ""], totalsLabel: "GJITHSEJ",
-    });
+    return kultivimeReplica([{ year, rows: rows.map((x: any[]) => [x[0], x[1], x[2], x[3], x[4], x[5] || null, x[6] || null, x[7] || null, x[8] || null, x[9] || null, null]),
+      inspectedAt: dShort(new Date().toISOString().slice(0, 10)) }]);
   }
   if (r.type === "rotation") {
     // Si «PLAN QARKULLIMI»: çdo parcelë dhe çfarë kultivohet në çdo vit (djerr kur nuk ka kultivim)
