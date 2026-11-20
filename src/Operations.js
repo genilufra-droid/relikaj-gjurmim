@@ -4,7 +4,7 @@ import { Alert, ScrollView, Text, View, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { sb } from "./supabase";
 import Lookup, { LOOKUPS } from "./Lookup";
-import { s, C, Btn, Field, Card, Chip, Empty, ErrorBox, Loading, Segmented, Stat, SectionTitle, money, num, today, dFull, dShort, Kpis } from "./ui";
+import { s, C, Btn, Field, Card, Chip, ChipRow, Empty, ErrorBox, Loading, Segmented, Stat, SectionTitle, money, num, today, dFull, dShort, Kpis } from "./ui";
 
 export const OP_KINDS = [["plow", "Plugim"], ["till", "Frezim"], ["harrow", "Lesë (disk)"], ["subsoil", "Mihje"], ["level", "Nivelim"], ["mow", "Kositje"], ["haul", "Transport"], ["other", "Tjetër"]];
 export const APP_KINDS = [["fert", "Pleh"], ["pesticide", "Pesticid"], ["foliar", "Foliar"], ["irrigation", "Ujitje"], ["biological", "Biologjik"], ["other", "Tjetër"]];

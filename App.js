@@ -28,6 +28,7 @@ import Reminders from "./src/Reminders";
 import Import from "./src/Import";
 import Start from "./src/Start";
 import Assistant from "./src/Assistant";
+import ErrorBoundary from "./src/ErrorBoundary";
 import Profile from "./src/Profile";
 import ResetPassword from "./src/auth/Reset";
 import { parseAuthUrl, isRecovery } from "./src/auth/links";
@@ -272,7 +273,10 @@ export default function App() {
         </View>
       )}
 
-      <View style={{ flex: 1, backgroundColor: C.bg }}>{body}</View>
+      <View style={{ flex: 1, backgroundColor: C.bg }}>
+        {/* key: kur ndryshon ekrani, kufiri i gabimeve rifreskohet vetë */}
+        <ErrorBoundary key={`${form || tab}-${plotId || ""}-${cid}`}>{body}</ErrorBoundary>
+      </View>
 
       <View style={s.tabs}>
         {TABS.map(([k, title, icon]) => {

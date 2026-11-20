@@ -58,3 +58,6 @@ Rrjedha e plotë e fjalëkalimit, siç pritet nga një sistem i vërtetë:
 - **Siguria:** vetëregjistrimi u mbyll (`disable_signup`), lidhjet lejohen vetëm për `biobesfarm://`, funksioni `member_contacts` hapet vetëm për adminin e kompanisë.
 - **Dokumenti:** `docs/fjalekalimi.md` — gjendja reale e serverit, teksti shqip i emailit dhe hapat për SMTP të vërtetë (pa SMTP, posta e provës së Supabase shkon vetëm te pronari i projektit).
 - **Testet:** `tests/auth_test.js` — 25 raste për trajtat e lidhjes (hash, `token_hash`, `code`, gabime skadimi, dekodim).
+
+## v0.7.1 — rregullim i ekraneve me listë
+Ekranet **Parcelat, Shpenzimet/Blerjet, Mostrat, Zonat dhe Puna në tokë** binin (ekran bosh i gjelbër) sapo lista kishte të paktën një rresht, sepse përdornin `ChipRow` pa e importuar. U rregullua në të pesë skedarët, u shtua **kufiri i gabimeve** (`src/ErrorBoundary.js`) që një gabim i ardhshëm të shfaqë mesazh e «Provo përsëri» në vend të ekranit bosh, dhe u shtua testi i renderimit të 19 ekraneve (`npm test`, `tests/smoke/`). Skedari `src/reports.js` u riemërua `src/reportBuilder.js` që të mos përplaset me `src/Reports.js` në sistemet me shkronja të vogla/të mëdha të pandryshueshme (macOS/Windows).

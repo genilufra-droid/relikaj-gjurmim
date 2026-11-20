@@ -4,7 +4,7 @@ import { ScrollView, Text, View, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { sb } from "./supabase";
 import { s, C, Btn, Card, Chip, Empty, ErrorBox, Loading, SectionTitle, Stat, Kpis, fmt, money, dFull, daysBetween } from "./ui";
-import { downloadReport } from "./reports";
+import { downloadReport } from "./reportBuilder";
 
 const CATS = [
   { key: "pagesa", title: "Pagesa të papaguara", icon: "cash-outline", tone: C.red, soft: C.dangerSoft, go: "blerje", text: "Fermerët presin pagesën e korrjes." },

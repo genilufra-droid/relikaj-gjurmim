@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { ScrollView, Text, View, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { sb } from "./supabase";
-import { s, C, Btn, Field, Card, Chip, Empty, ErrorBox, Loading, SearchBar, Stat, SectionTitle, fmt, money, Kpis } from "./ui";
+import { s, C, Btn, Field, Card, Chip, ChipRow, Empty, ErrorBox, Loading, SearchBar, Stat, SectionTitle, fmt, money, Kpis } from "./ui";
 
 export function ZoneForm({ cid, zone, onDone }) {
   const [f, setF] = useState({

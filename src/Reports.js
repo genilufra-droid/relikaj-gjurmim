@@ -4,7 +4,7 @@ import { ScrollView, Text, View, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { s, C, Btn, Field, Card, Chip, ChipRow, ErrorBox, SectionTitle, today } from "./ui";
 import Lookup, { LOOKUPS } from "./Lookup";
-import { downloadReport } from "./reports";
+import { downloadReport } from "./reportBuilder";
 
 const iso = (d) => d.toISOString().slice(0, 10);
 const PRESETS = [["month", "Ky muaj"], ["year", "Ky vit"], ["last", "Viti i kaluar"], ["all", "Gjithë"], ["custom", "Vetë"]];

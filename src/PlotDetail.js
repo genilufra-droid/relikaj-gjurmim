@@ -4,7 +4,7 @@ import { ScrollView, Text, View, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { sb } from "./supabase";
 import { s, C, Btn, Card, Chip, ChipRow, Empty, ErrorBox, Kpis, Loading, SectionTitle, Stat, fmt, money, dFull, dShort } from "./ui";
-import { downloadReport } from "./reports";
+import { downloadReport } from "./reportBuilder";
 
 const OWN = { owned: "Në pronësi", leased: "Me qira", wild: "E egër / djerr" };
 const STATUS = { active: "Aktive", fallow: "Djerr", resting: "Në pushim" };
