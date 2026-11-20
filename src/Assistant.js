@@ -89,17 +89,22 @@ export default function Assistant({ cid, onGo }) {
   };
 
   const startHold = async () => {
-    if (!server) { listenDevice(); return; }
-    held.current = true;
+    held.current = { at: Date.now() };
     setErr(""); setListening(true); setLive("");
     try { await startRecording(); }
-    catch (e) { held.current = false; setListening(false); setErr(e.message); }
+    catch (e) { held.current = null; setListening(false); setErr(e.message); }
   };
 
   const endHold = async () => {
-    if (!held.current) return;
-    held.current = false;
+    const press = held.current;
+    if (!press) return;
+    held.current = null;
     setListening(false);
+    if (Date.now() - press.at < 700) {
+      await cancelRecording();
+      setHint("Mbajeni shtypur butonin ndërsa flisni, pastaj lëshojeni.");
+      return;
+    }
     setBusy(true);
     try {
       const uri = await stopRecording();
@@ -111,13 +116,6 @@ export default function Assistant({ cid, onGo }) {
     } finally {
       setBusy(false);
     }
-  };
-
-  const cancelHold = async () => {
-    if (!held.current) return;
-    held.current = false;
-    setListening(false);
-    await cancelRecording();
   };
 
   // ------------------------------------------------------------ ruajtja
@@ -202,10 +200,9 @@ export default function Assistant({ cid, onGo }) {
 
       <View style={{ alignItems: "center", marginTop: 18 }}>
         <TouchableOpacity
-          onPressIn={startHold}
-          onPressOut={endHold}
-          onLongPress={() => { if (!server) listenDevice(); }}
-          delayLongPress={400}
+          onPressIn={() => { if (server) startHold(); }}
+          onPressOut={() => { if (server) endHold(); }}
+          onPress={() => { if (!server) listenDevice(); }}
           activeOpacity={0.85}
           style={{
             width: 104, height: 104, borderRadius: 52, alignItems: "center", justifyContent: "center",
