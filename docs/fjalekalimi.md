@@ -59,20 +59,59 @@ I shpejti, i mjaftueshëm për një ekip të vogël (deri ~500 email në ditë).
 
 Fjalëkalimi i aplikacionit: llogaria Google → **Siguria** → «Verifikimi në dy hapa» (duhet ndezur) → **Fjalëkalimet e aplikacioneve** → krijo «BioBes Farm» → kopjo 16 shkronjat (me hapësira, siç i jep Google).
 
-### Opsioni B — Resend ose Brevo (profesional, dërgues `noreply@relikaj.al`)
+### Opsioni B — Brevo (profesional, dërgues `noreply@relikaj.al`), hap pas hapi
 
-1. Llogari te [resend.com](https://resend.com) ose [brevo.com](https://brevo.com) (plan falas).
-2. Shtoni domenin `relikaj.al` dhe vendosni te DNS-ja e domenit rekordet që jep shërbimi (SPF, DKIM; zakonisht 3–4 rekorde TXT/CNAME). Pritni «Verified».
-3. Në shërbim krijoni një **API key** me leje vetëm-dërgim.
+**B1. Llogaria.** [brevo.com](https://www.brevo.com) → *Sign up free*. Plotësoni emrin, emailin, fjalëkalimin, emrin e kompanisë (`BioBes`), numrin e telefonit; konfirmojeni emailin e regjistrimit. Plani falas: **300 email në ditë**, pa kartë.
 
-| Fusha në panel | Resend | Brevo |
+**B2. Dërguesi i parë.** Menyja majtas → **Senders, Domains & Dedicated IPs → Senders → Add a sender**: `noreply@relikaj.al` (ose `info@relikaj.al`), emri `BioBes Farm`. Brevo dërgon një email konfirmimi në atë adresë → hapni lidhjen *Verify this sender*.
+Kontrolli: te lista e dërguesve shkruan **Verified**.
+
+**B3. Autentikimi i domenit (rekomandohet fort).** E njëjta meny → **Domains → Add a domain** → `relikaj.al` → *Add*. Brevo shfaq 3 rekorde DNS; kopjojini saktësisht te paneli i DNS-së së `relikaj.al` (ku është regjistruar domeni):
+
+| Tipi | Host / Name | Vlera |
 |---|---|---|
-| Host | `smtp.resend.com` | `smtp-relay.brevo.com` |
-| Port | `587` | `587` |
-| Username | `resend` | emaili i llogarisë Brevo |
-| Password | API key (`re_…`) | SMTP key nga Brevo |
-| Sender email | `noreply@relikaj.al` | `noreply@relikaj.al` |
-| Sender name | `BioBes Farm` | `BioBes Farm` |
+| TXT | `@` (ose bosh) | `brevo-code:xxxxxxxx` (kodi që jep Brevo) |
+| TXT | `@` (ose bosh) | `v=spf1 include:spf.brevo.com ~all` — **nëse ekziston një SPF**, shtoni `include:spf.brevo.com` brenda tij, mos krijoni dy |
+| TXT | `mail._domainkey` | vlera e gjatë `v=DKIM1; k=rsa; p=…` që jep Brevo |
+
+Prisni 15 minuta – 4 orë → kthehuni te Brevo dhe shtypni **Verify**. Kontrolli: domeni shfaqet **Authenticated** (DKIM ✓). Nëse DNS-ja menaxhohet nga ofruesi i hostingut, këto tri rreshta shtohen te «DNS Zone Editor» e tyre.
+
+**B4. Çelësi SMTP.** Menyja → **Transactional → Settings → Configuration → SMTP relay** (ose profili lart djathtas → **SMTP & API → SMTP**). Shtypni **Generate a new SMTP key**, emërtojeni `BioBes Farm`. Kopjojeni menjëherë — shfaqet vetëm një herë. Në të njëjtën faqe shkruhen: *SMTP server* `smtp-relay.brevo.com`, *Port* `587`, dhe **Login** (adresa e llogarisë Brevo ose një hyrje SMTP e veçantë).
+
+> Mos përdorni fjalëkalimin e llogarisë Brevo dhe as *API key*-n (`xkeysib-…`): për SMTP vlen vetëm **SMTP key**.
+
+**B5. Vlerat për Supabase** (kopjoji diku, se i duhen në hapin S2):
+
+| Fusha | Vlera |
+|---|---|
+| Host | `smtp-relay.brevo.com` |
+| Port | `587` (nëse Supabase raporton gabim lidhjeje: `465` ose `2525`) |
+| Username | **Login**-i nga faqja SMTP e Brevo-s |
+| Password | SMTP key (jo API key) |
+| Sender email | `noreply@relikaj.al` (i verifikuar në B2/B3) |
+| Sender name | `BioBes Farm` |
+
+### Supabase, hap pas hapi (S)
+
+**S1.** Hapni projektin `xckyafmpzruklibdhxzx` → **Authentication → Emails** → skeda **SMTP Settings** → ndizni **Enable Custom SMTP**.
+
+**S2.** Plotësoni: *Host* `smtp-relay.brevo.com`, *Port* `587`, *Username* = Login-i i Brevo-s, *Password* = SMTP key, *Sender email* `noreply@relikaj.al`, *Sender name* `BioBes Farm` → **Save changes**.
+
+**S3.** Në të njëjtën faqe **Emails**: *Rate limit for sending emails* → `30` (ose `60`). Kjo zëvendëson kufirin 2/orë të provës.
+
+**S4.** Skeda **Templates** → *Reset Password*: subjekti dhe trupi shqip (tekstet më poshtë) → **Save**. Po ashtu *Password Changed*.
+
+**S5.** **Authentication → Providers → Email**: *Minimum password length* = `8` → **Save**.
+
+**S6. Prova.** Në aplikacion «Harruat fjalëkalimin?» me emailin tuaj → kontrolloni kutinë (edhe Spam). Pastaj në Supabase **Logs → Auth** shihet rreshti i dërgimit ose gabimi i saktë.
+
+| Nëse dështon | Shkaku dhe zgjidhja |
+|---|---|
+| `535 Authentication failed` | Në *Password* është fjalëkalimi i llogarisë ose API key — duhet **SMTP key** |
+| `550 Sender not verified` | Dërguesi nuk është verifikuar në Brevo (B2) ose domeni s'është *Authenticated* (B3) |
+| `Connection timed out` / `ECONNREFUSED` | Provo portin `465` ose `2525` |
+| Emaili arrin te Spam | Mungon DKIM/SPF (B3) — përfundoni verifikimin e domenit |
+| S'arrin fare, pa gabim | Rate limit 2/orë ende aktiv → S3 |
 
 ### Pas ruajtjes (të dyja opsionet)
 
