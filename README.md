@@ -66,3 +66,9 @@ Ekranet **Parcelat, Shpenzimet/Blerjet, Mostrat, Zonat dhe Puna në tokë** bini
 - **Pamja e grumbulluesit** (`src/Field.js`): kur roli është `grumbullues`, tab-i «Pasqyra» hapet me punën e ditës — dy veprime të mëdha (**Blerje**, **Mostër**), sasia dhe vlera e sotme, dhe lista e regjistrimeve të ditës me tërheqje për rifreskim. Pa menu të panevojshme.
 - **Email i vërtetë për llogaritë ekzistuese**: te «Përdoruesit» → anëtari → fusha *Email i llogarisë* + «Ruaj emailin» (veprim i ri `set_email` te `admin-users`, v2 në server). Email-i konfirmohet menjëherë, fjalëkalimi nuk ndryshon, dhe nga ai moment llogaria hyn me email e mund të rivendosë vetë fjalëkalimin. Email-et e brendshme `@login.relikaj.al` refuzohen.
 - Testet e renderimit mbulojnë tani 20 ekrane, përfshirë `Field` me regjistrime.
+
+## Faza 9 — backup dhe rikthim (v0.9.0)
+- **Backup i kompanisë** (`supabase/functions/backup`, ekrani `src/Backup.js`, Modulet → Administrimi): 21 tabela në një skedar `.json`, krijuar në server me lejet e përdoruesit, i ruajtur në telefon me menunë e ndarjes.
+- **Rikthim** me provë paraprake (dry-run) dhe më pas shkrim: shton vetëm, ripërdor rreshtat ekzistues sipas kodit/emrit dhe **rihartëzon lidhjet** (një backup i vjetër rindërton `farmer_id`, `plot_id`, `product_id`… të sakta). Nuk fshin asgjë.
+- **Rregullim i vlerës së blerjes:** `purchases.amount` nuk shkruhej kurrë (mbetej 0); tani llogaritet në bazë me trigger (`0009_vlera_e_blerjes.sql`) dhe u plotësuan 11 blerjet ekzistuese — 951.300 lekë që më parë s'shfaqeshin në raporte.
+- Dokumenti: `docs/backup.md` (çka përfshihet, si rikthehet, kufizimet).

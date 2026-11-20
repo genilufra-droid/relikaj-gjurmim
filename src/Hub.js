@@ -65,7 +65,10 @@ export default function Hub({ role, onGo }) {
     items: g.items.filter(([k]) => (k === "mostra" ? staff || role === "grumbullues" : true)),
   })).concat(
     role === "admin"
-      ? [{ title: "Administrimi", items: [["perdorues", "Përdoruesit", "Role dhe qasje", "people-circle-outline"]] }]
+      ? [{ title: "Administrimi", items: [
+          ["perdorues", "Përdoruesit", "Role dhe qasje", "people-circle-outline"],
+          ["backup", "Backup", "Ruaj dhe rikthe të dhënat", "shield-checkmark-outline"],
+        ] }]
       : []
   );
 
