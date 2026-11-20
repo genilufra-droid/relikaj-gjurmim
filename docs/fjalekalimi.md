@@ -41,12 +41,88 @@ Gjendja e projektit `xckyafmpzruklibdhxzx`:
 
 Me `smtp_host` bosh, Supabase përdor postën e vet të provës: dërgon **vetëm në adresa të anëtarëve të ekipit të projektit** dhe me shumë pak email në orë. Pra **rivendosja me email punon vetëm për ju si pronar i projektit**, derisa të vendoset një server i vërtetë:
 
-1. Krijoni një llogari te një shërbim emaili transaksional (rekomandohen **Resend** ose **Brevo**; të dyja kanë plan falas dhe lejojnë domenin `relikaj.al` me DNS records SPF/DKIM).
-2. Supabase → **Authentication → Emails → SMTP Settings**: vendosni host, port 587, përdorues, fjalëkalim (ose API key), dërguesin `noreply@relikaj.al` dhe emrin `BioBes Farm`.
-3. Në të njëjtën faqe, përkthejini subjektet/template-t (më poshtë).
-4. Kufirin «Rate limit for sending emails» rriteni në 30–60 në orë.
+Faqja e panelit: **Authentication → Emails → SMTP Settings** (ndizni «Enable Custom SMTP»).
+Kredencialet i jep vetëm pronari i llogarisë së emailit — nuk shkruhen në kod, në bisedë, as në këtë dokument.
 
-Fjalëkalimet e SMTP-së **nuk shkruhen në kod as në këtë dokument** — vendosen vetëm në panelin e Supabase.
+### Opsioni A — Gmail / Google Workspace (2 minuta, pa DNS)
+
+I shpejti, i mjaftueshëm për një ekip të vogël (deri ~500 email në ditë).
+
+| Fusha në panel | Vlera |
+|---|---|
+| Host | `smtp.gmail.com` |
+| Port | `587` |
+| Username | adresa e plotë, p.sh. `exhylali@gmail.com` |
+| Password | **Fjalëkalim aplikacioni 16 shkronja** (jo fjalëkalimi i llogarisë) |
+| Sender email | e njëjta adresë |
+| Sender name | `BioBes Farm` |
+
+Fjalëkalimi i aplikacionit: llogaria Google → **Siguria** → «Verifikimi në dy hapa» (duhet ndezur) → **Fjalëkalimet e aplikacioneve** → krijo «BioBes Farm» → kopjo 16 shkronjat (me hapësira, siç i jep Google).
+
+### Opsioni B — Brevo (profesional, dërgues `noreply@relikaj.al`), hap pas hapi
+
+**B1. Llogaria.** [brevo.com](https://www.brevo.com) → *Sign up free*. Plotësoni emrin, emailin, fjalëkalimin, emrin e kompanisë (`BioBes`), numrin e telefonit; konfirmojeni emailin e regjistrimit. Plani falas: **300 email në ditë**, pa kartë.
+
+**B2. Dërguesi i parë.** Menyja majtas → **Senders, Domains & Dedicated IPs → Senders → Add a sender**: `noreply@relikaj.al` (ose `info@relikaj.al`), emri `BioBes Farm`. Brevo dërgon një email konfirmimi në atë adresë → hapni lidhjen *Verify this sender*.
+Kontrolli: te lista e dërguesve shkruan **Verified**.
+
+**B3. Autentikimi i domenit (rekomandohet fort).** E njëjta meny → **Domains → Add a domain** → `relikaj.al` → *Add*. Brevo shfaq 3 rekorde DNS; kopjojini saktësisht te paneli i DNS-së së `relikaj.al` (ku është regjistruar domeni):
+
+| Tipi | Host / Name | Vlera |
+|---|---|---|
+| TXT | `@` (ose bosh) | `brevo-code:xxxxxxxx` (kodi që jep Brevo) |
+| TXT | `@` (ose bosh) | `v=spf1 include:spf.brevo.com ~all` — **nëse ekziston një SPF**, shtoni `include:spf.brevo.com` brenda tij, mos krijoni dy |
+| TXT | `mail._domainkey` | vlera e gjatë `v=DKIM1; k=rsa; p=…` që jep Brevo |
+
+Prisni 15 minuta – 4 orë → kthehuni te Brevo dhe shtypni **Verify**. Kontrolli: domeni shfaqet **Authenticated** (DKIM ✓). Nëse DNS-ja menaxhohet nga ofruesi i hostingut, këto tri rreshta shtohen te «DNS Zone Editor» e tyre.
+
+**B4. Çelësi SMTP.** Menyja → **Transactional → Settings → Configuration → SMTP relay** (ose profili lart djathtas → **SMTP & API → SMTP**). Shtypni **Generate a new SMTP key**, emërtojeni `BioBes Farm`. Kopjojeni menjëherë — shfaqet vetëm një herë. Në të njëjtën faqe shkruhen: *SMTP server* `smtp-relay.brevo.com`, *Port* `587`, dhe **Login** (adresa e llogarisë Brevo ose një hyrje SMTP e veçantë).
+
+> Mos përdorni fjalëkalimin e llogarisë Brevo dhe as *API key*-n (`xkeysib-…`): për SMTP vlen vetëm **SMTP key**.
+
+**B5. Vlerat për Supabase** (kopjoji diku, se i duhen në hapin S2):
+
+| Fusha | Vlera |
+|---|---|
+| Host | `smtp-relay.brevo.com` |
+| Port | `587` (nëse Supabase raporton gabim lidhjeje: `465` ose `2525`) |
+| Username | **Login**-i nga faqja SMTP e Brevo-s |
+| Password | SMTP key (jo API key) |
+| Sender email | `noreply@relikaj.al` (i verifikuar në B2/B3) |
+| Sender name | `BioBes Farm` |
+
+### Supabase, hap pas hapi (S)
+
+**S1.** Hapni projektin `xckyafmpzruklibdhxzx` → **Authentication → Emails** → skeda **SMTP Settings** → ndizni **Enable Custom SMTP**.
+
+**S2.** Plotësoni: *Host* `smtp-relay.brevo.com`, *Port* `587`, *Username* = Login-i i Brevo-s, *Password* = SMTP key, *Sender email* `noreply@relikaj.al`, *Sender name* `BioBes Farm` → **Save changes**.
+
+**S3.** Në të njëjtën faqe **Emails**: *Rate limit for sending emails* → `30` (ose `60`). Kjo zëvendëson kufirin 2/orë të provës.
+
+**S4.** Skeda **Templates** → *Reset Password*: subjekti dhe trupi shqip (tekstet më poshtë) → **Save**. Po ashtu *Password Changed*.
+
+**S5.** **Authentication → Providers → Email**: *Minimum password length* = `8` → **Save**.
+
+**S6. Prova.** Në aplikacion «Harruat fjalëkalimin?» me emailin tuaj → kontrolloni kutinë (edhe Spam). Pastaj në Supabase **Logs → Auth** shihet rreshti i dërgimit ose gabimi i saktë.
+
+| Nëse dështon | Shkaku dhe zgjidhja |
+|---|---|
+| `535 Authentication failed` | Në *Password* është fjalëkalimi i llogarisë ose API key — duhet **SMTP key** |
+| `550 Sender not verified` | Dërguesi nuk është verifikuar në Brevo (B2) ose domeni s'është *Authenticated* (B3) |
+| `Connection timed out` / `ECONNREFUSED` | Provo portin `465` ose `2525` |
+| Emaili arrin te Spam | Mungon DKIM/SPF (B3) — përfundoni verifikimin e domenit |
+| S'arrin fare, pa gabim | Rate limit 2/orë ende aktiv → S3 |
+
+### Pas ruajtjes (të dyja opsionet)
+
+1. **Rate limit for sending emails** → `30` në orë (në vend të 2-shit të provës).
+2. Përkthejini subjektet/template-t me tekstin shqip më poshtë (faqja **Emails → Templates**).
+3. Prova: te aplikacioni «Harruat fjalëkalimin?» me emailin tuaj. Nëse s'arrin: Supabase → **Logs → Auth** tregon arsyen e saktë (`535`, `550`, DNS, rate limit).
+
+### Rritja e gjatësisë minimale të fjalëkalimit në 8
+
+**Authentication → Providers → Email → «Minimum password length» = 8** → Save.
+(Ky cilësim nuk ndryshohet nga API-ja e integrimit; ndryshohet vetëm në panel. Aplikacioni e kërkon 8 që sot — kjo e bën edhe serverin ta refuzojë më të shkurtër.)
 
 ### Teksti shqip i emailit (kopjojeni në panel)
 
@@ -77,7 +153,7 @@ Fjalëkalimet e SMTP-së **nuk shkruhen në kod as në këtë dokument** — ven
 
 ## 6. Çfarë mbetet (me radhë)
 
-1. SMTP i vërtetë + template-t shqip (pika 4) — pa këtë, emaili shkon vetëm te pronari i projektit.
-2. Rritja e `password_min_length` në 8 në panel.
+1. SMTP i vërtetë + template-t shqip (pika 4) — pa këtë, emaili shkon vetëm te pronari i projektit. **Nuk mund të bëhet nga kodi**: kërkon fjalëkalimin/API key-n e llogarisë suaj të emailit, që vendoset vetëm në panelin e Supabase (2 minuta me Gmail, opsioni A).
+2. Rritja e `password_min_length` në 8 në panel (rruga te pika 4; integrimi API nuk e lejon).
 3. SMS vetëm nëse vendoset Twilio/Vonage me numër dërguesi (kosto reale për çdo mesazh).
 4. Verifikimi me dy hapa (TOTP) — serveri e mban të gatshëm (`mfa_totp_enroll_enabled = true`), ekrani nuk është ndërtuar.
