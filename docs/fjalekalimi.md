@@ -41,12 +41,49 @@ Gjendja e projektit `xckyafmpzruklibdhxzx`:
 
 Me `smtp_host` bosh, Supabase përdor postën e vet të provës: dërgon **vetëm në adresa të anëtarëve të ekipit të projektit** dhe me shumë pak email në orë. Pra **rivendosja me email punon vetëm për ju si pronar i projektit**, derisa të vendoset një server i vërtetë:
 
-1. Krijoni një llogari te një shërbim emaili transaksional (rekomandohen **Resend** ose **Brevo**; të dyja kanë plan falas dhe lejojnë domenin `relikaj.al` me DNS records SPF/DKIM).
-2. Supabase → **Authentication → Emails → SMTP Settings**: vendosni host, port 587, përdorues, fjalëkalim (ose API key), dërguesin `noreply@relikaj.al` dhe emrin `BioBes Farm`.
-3. Në të njëjtën faqe, përkthejini subjektet/template-t (më poshtë).
-4. Kufirin «Rate limit for sending emails» rriteni në 30–60 në orë.
+Faqja e panelit: **Authentication → Emails → SMTP Settings** (ndizni «Enable Custom SMTP»).
+Kredencialet i jep vetëm pronari i llogarisë së emailit — nuk shkruhen në kod, në bisedë, as në këtë dokument.
 
-Fjalëkalimet e SMTP-së **nuk shkruhen në kod as në këtë dokument** — vendosen vetëm në panelin e Supabase.
+### Opsioni A — Gmail / Google Workspace (2 minuta, pa DNS)
+
+I shpejti, i mjaftueshëm për një ekip të vogël (deri ~500 email në ditë).
+
+| Fusha në panel | Vlera |
+|---|---|
+| Host | `smtp.gmail.com` |
+| Port | `587` |
+| Username | adresa e plotë, p.sh. `exhylali@gmail.com` |
+| Password | **Fjalëkalim aplikacioni 16 shkronja** (jo fjalëkalimi i llogarisë) |
+| Sender email | e njëjta adresë |
+| Sender name | `BioBes Farm` |
+
+Fjalëkalimi i aplikacionit: llogaria Google → **Siguria** → «Verifikimi në dy hapa» (duhet ndezur) → **Fjalëkalimet e aplikacioneve** → krijo «BioBes Farm» → kopjo 16 shkronjat (me hapësira, siç i jep Google).
+
+### Opsioni B — Resend ose Brevo (profesional, dërgues `noreply@relikaj.al`)
+
+1. Llogari te [resend.com](https://resend.com) ose [brevo.com](https://brevo.com) (plan falas).
+2. Shtoni domenin `relikaj.al` dhe vendosni te DNS-ja e domenit rekordet që jep shërbimi (SPF, DKIM; zakonisht 3–4 rekorde TXT/CNAME). Pritni «Verified».
+3. Në shërbim krijoni një **API key** me leje vetëm-dërgim.
+
+| Fusha në panel | Resend | Brevo |
+|---|---|---|
+| Host | `smtp.resend.com` | `smtp-relay.brevo.com` |
+| Port | `587` | `587` |
+| Username | `resend` | emaili i llogarisë Brevo |
+| Password | API key (`re_…`) | SMTP key nga Brevo |
+| Sender email | `noreply@relikaj.al` | `noreply@relikaj.al` |
+| Sender name | `BioBes Farm` | `BioBes Farm` |
+
+### Pas ruajtjes (të dyja opsionet)
+
+1. **Rate limit for sending emails** → `30` në orë (në vend të 2-shit të provës).
+2. Përkthejini subjektet/template-t me tekstin shqip më poshtë (faqja **Emails → Templates**).
+3. Prova: te aplikacioni «Harruat fjalëkalimin?» me emailin tuaj. Nëse s'arrin: Supabase → **Logs → Auth** tregon arsyen e saktë (`535`, `550`, DNS, rate limit).
+
+### Rritja e gjatësisë minimale të fjalëkalimit në 8
+
+**Authentication → Providers → Email → «Minimum password length» = 8** → Save.
+(Ky cilësim nuk ndryshohet nga API-ja e integrimit; ndryshohet vetëm në panel. Aplikacioni e kërkon 8 që sot — kjo e bën edhe serverin ta refuzojë më të shkurtër.)
 
 ### Teksti shqip i emailit (kopjojeni në panel)
 
@@ -77,7 +114,7 @@ Fjalëkalimet e SMTP-së **nuk shkruhen në kod as në këtë dokument** — ven
 
 ## 6. Çfarë mbetet (me radhë)
 
-1. SMTP i vërtetë + template-t shqip (pika 4) — pa këtë, emaili shkon vetëm te pronari i projektit.
-2. Rritja e `password_min_length` në 8 në panel.
+1. SMTP i vërtetë + template-t shqip (pika 4) — pa këtë, emaili shkon vetëm te pronari i projektit. **Nuk mund të bëhet nga kodi**: kërkon fjalëkalimin/API key-n e llogarisë suaj të emailit, që vendoset vetëm në panelin e Supabase (2 minuta me Gmail, opsioni A).
+2. Rritja e `password_min_length` në 8 në panel (rruga te pika 4; integrimi API nuk e lejon).
 3. SMS vetëm nëse vendoset Twilio/Vonage me numër dërguesi (kosto reale për çdo mesazh).
 4. Verifikimi me dy hapa (TOTP) — serveri e mban të gatshëm (`mfa_totp_enroll_enabled = true`), ekrani nuk është ndërtuar.
