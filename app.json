@@ -2,7 +2,7 @@
   "expo": {
     "name": "BioBes Farm",
     "slug": "relikaj-gjurmim",
-    "version": "0.6.0",
+    "version": "0.7.1",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "assetBundlePatterns": [
@@ -21,7 +21,7 @@
     },
     "android": {
       "package": "al.relikaj.gjurmim",
-      "versionCode": 9,
+      "versionCode": 11,
       "backgroundColor": "#14532D",
       "permissions": [
         "ACCESS_COARSE_LOCATION",
@@ -34,7 +34,22 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#14532D"
-      }
+      },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": false,
+          "data": [
+            {
+              "scheme": "biobesfarm"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
     },
     "plugins": [
       [
@@ -63,6 +78,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#14532D"
     },
-    "icon": "./assets/icon.png"
+    "icon": "./assets/icon.png",
+    "scheme": "biobesfarm"
   }
 }

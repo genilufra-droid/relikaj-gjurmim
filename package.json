@@ -5,7 +5,9 @@
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
-    "ios": "expo run:ios"
+    "ios": "expo run:ios",
+    "test": "bash scripts/test.sh",
+    "test:ui": "bash scripts/test.sh"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "1.23.1",
@@ -15,6 +17,7 @@
     "expo-document-picker": "~12.0.2",
     "expo-file-system": "~17.0.1",
     "expo-image-picker": "~15.0.7",
+    "expo-linking": "~6.3.1",
     "expo-location": "~17.0.1",
     "expo-sharing": "~12.0.1",
     "expo-speech-recognition": "^0.3.2",
@@ -25,6 +28,7 @@
     "react-native-url-polyfill": "^2.0.0"
   },
   "devDependencies": {
-    "esbuild": "0.23.0"
+    "esbuild": "0.23.0",
+    "react-test-renderer": "^18.2.0"
   }
 }

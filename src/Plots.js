@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import { sb } from "./supabase";
 import Lookup, { LOOKUPS } from "./Lookup";
-import { s, C, Btn, Field, Card, Chip, Empty, ErrorBox, Loading, SearchBar, Segmented, Stat, FAB, money, fmt, num, Kpis } from "./ui";
+import { s, C, Btn, Field, Card, Chip, ChipRow, Empty, ErrorBox, Loading, SearchBar, Segmented, Stat, FAB, money, fmt, num, Kpis } from "./ui";
 
 const GROWING = [["field", "Fushë e hapur", "leaf-outline"], ["greenhouse", "Serë", "home-outline"]];
 const IRRIG = [["none", "Pa ujitje"], ["drip", "Pika-pika"], ["sprinkler", "Spërkatje"], ["furrow", "Brazda"]];

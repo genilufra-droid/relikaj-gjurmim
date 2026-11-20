@@ -4,7 +4,7 @@ import { FlatList, ScrollView, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { sb } from "./supabase";
 import Lookup, { LOOKUPS } from "./Lookup";
-import { s, C, Field, Btn, Card, Chip, Empty, ErrorBox, Loading, SearchBar, Segmented, Stat, fmt, today, dFull, Kpis } from "./ui";
+import { s, C, Field, Btn, Card, Chip, ChipRow, Empty, ErrorBox, Loading, SearchBar, Segmented, Stat, fmt, today, dFull, Kpis } from "./ui";
 
 const POINTS = [["plot", "Në parcelë"], ["center", "Në qendër"], ["warehouse", "Në magazinë"]];
 const POINT = Object.fromEntries(POINTS);

@@ -2,3 +2,7 @@ node_modules/
 android/
 ios/
 .expo/
+tests/.auth_test.mjs
+tests/.voice_test.mjs
+tests/.import_test.mjs
+tests/smoke/render.out.mjs
