@@ -2,7 +2,7 @@
 import { buildXlsx } from "./xlsx.ts";
 import { buildPdf } from "./pdf.ts";
 import { farmerReport, growersReport, inputsReport, lotSheetReport, plotReport, plotsReport, summaryReport, tableReport, tasksReport, traceReport, zonesReport } from "./defs.ts";
-import { kultivimeReplica } from "./replicas.ts";
+import { dhlReplica, kultivimeReplica } from "./replicas.ts";
 import type { Report } from "./types.ts";
 
 // Pjesa e klientit Supabase që përdorim (lehtëson testimin)
@@ -31,6 +31,7 @@ const inRange = (d: unknown, from?: string, to?: string) => {
 const periodLabel = (r: Req) => (r.from || r.to)
   ? `${r.from ? dShort(r.from) : "fillimi"} – ${r.to ? dShort(r.to) : "sot"}`
   : `Viti ${Number(r.year) || new Date().getFullYear()}`;
+const dDots = (iso: string) => `${Number(iso.slice(8, 10))}.${Number(iso.slice(5, 7))}.${iso.slice(0, 4)}`;
 const dShort = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 const POINT_L: Record<string, string> = { plot: "Në parcelë", center: "Në qendër", warehouse: "Në magazinë" };
 const METHOD_L: Record<string, string> = { drying: "Tharje", cleaning: "Pastrim", cutting: "Prerje", grading: "Klasifikim", oil: "Nxjerrje vaji", packing: "Paketim", other: "Tjetër" };
@@ -344,17 +345,11 @@ export async function makeReport(sb: Sb, r: Req): Promise<Report> {
     const rows = all.filter((x: any) => inRange(x.ship_date, r.from, r.to) && (!r.carrier || String(x.carrier).toLowerCase() === r.carrier.toLowerCase()));
     const sum = (k: string) => rows.reduce((a: number, x: any) => a + Number(x[k] ?? 0), 0);
     const label = r.carrier || "DHL / FedEx";
-    return tableReport({
-      name: `Faturat_${(r.carrier || "kurier").replace(/\W+/g, "")}_${r.from || r.year || "te_gjitha"}`, sheet: "FATURAT", title: `${label} — faturat e dërgesave`,
-      subtitle: `${co.name} · ${periodLabel(r)} · ${rows.length} dërgesa · borxh ${(sum("amount_eur") - sum("paid_eur")).toFixed(2)} EUR`,
-      cols: [{ label: "Nr.", width: 6, align: "c" }, { label: "Kodi i gjurmimit", width: 18 }, { label: "Kuriri", width: 9 }, { label: "Data e dërgesës", width: 13 },
-        { label: "Marrësi", width: 28 }, { label: "Shteti", width: 12 }, { label: "Data e faturës", width: 13 }, { label: "Shuma (EUR)", width: 12, align: "r" },
-        { label: "Data e pagesës", width: 13 }, { label: "Paguar (EUR)", width: 12, align: "r" }, { label: "Mbetje (EUR)", width: 12, align: "r" }, { label: "Shënim", width: 28 }],
-      rows: rows.map((x: any, i: number) => [i + 1, x.tracking_no, x.carrier, x.ship_date ? dShort(x.ship_date) : "", x.customers?.name || x.recipient || "",
-        x.customers?.country || x.country || "", x.invoice_date ? dShort(x.invoice_date) : "", Number(x.amount_eur ?? 0), x.paid_date ? dShort(x.paid_date) : "",
-        Number(x.paid_eur ?? 0), Number(x.amount_eur ?? 0) - Number(x.paid_eur ?? 0), x.note || ""]),
-      totals: ["", "__label__", "", "", "", "", "", sum("amount_eur"), "", sum("paid_eur"), sum("amount_eur") - sum("paid_eur"), ""], totalsLabel: "GJITHSEJ",
-    });
+    return dhlReplica(label, rows.map((x: any) => ({
+      tracking: x.tracking_no ?? null, shipDate: x.ship_date ? dDots(x.ship_date) : "", recipient: x.customers?.name || x.recipient || "",
+      country: x.customers?.country || x.country || "", invoiceDate: x.invoice_date ? dDots(x.invoice_date) : "",
+      amount: x.amount_eur == null ? null : Number(x.amount_eur), payDate: x.paid_date ? dDots(x.paid_date) : "",
+      paid: x.paid_eur == null ? null : Number(x.paid_eur), note: x.note || "" })));
   }
   throw new ReportError("Lloji i raportit nuk njihet");
 }

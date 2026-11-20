@@ -61,3 +61,23 @@ export function kultivimeReplica(blocks: KultivimeBlock[]): Report {
   });
   return { name: `KULTIVIME_BIOBES_${blocks[0]?.year ?? ""}`, sheet: `PERMBLEDHJE ${blocks[0]?.year ?? ""}`, orientation: "landscape", paper: "A3", scalePct: 90, widths, rows, merges };
 }
+
+export interface DhlRow { tracking: string | number | null; shipDate: string; recipient: string; country: string; invoiceDate: string; amount: number | null; payDate: string; paid: number | null; note: string }
+
+/** «DHL FATURAT» — njësoj si fleta «DHL FATURAT 2025+2026» e protokollit të mostrave. */
+export function dhlReplica(title: string, list: DhlRow[]): Report {
+  const widths = [13.0, 6.57, 15.14, 16.0, 47.86, 13.86, 16.43, 15.29, 13.86, 17.86, 37.57];
+  const EUR = '_([$€-2]\\ * #,##0.00_);_([$€-2]\\ * \\(#,##0.00\\);_([$€-2]\\ * "-"??_);_(@_)';
+  const heads = ["NR", "Kodi Gjurmueshmerise", "Data e dergeses", "Marresi mostres", "Shteti", "Data fatures dhl", "Shuma ne eur", "DATA PAGESES", "SHUMA E PAGUAR NE EUR"];
+  const hSides = ["lrt", "rt", "rt", "rt", "rt", "rt", "t", "lrt", "lrt"];
+  const rows: Row[] = [{ height: 15, cells: widths.map(() => blank()) }, { height: 15, cells: widths.map(() => blank()) }];
+  rows.push({ height: 33, header: true, cells: [blank(), ...heads.map((h, i) => ({ v: h, fontName: "Arial", size: i === 6 ? 10 : 9, bold: true, fill: "FFC000", sides: hSides[i], align: "c" as const, valign: "m" as const, wrap: true })), blank()] });
+  const a = (o: Partial<Cell>): Cell => ({ v: null, fontName: "Calibri", size: 12, sides: "lrtb", ...o });
+  list.forEach((d, i) => rows.push({ height: 17.25, cells: [blank(),
+    { v: String(i + 1), fontName: "Arial", size: 9, sides: "lrtb", align: "c" },
+    { v: d.tracking, fontName: "Arial", size: 11, sides: "lrtb", align: "r" },
+    a({ v: d.shipDate, align: "c" }), a({ v: d.recipient }), a({ v: d.country, size: 11 }), a({ v: d.invoiceDate, wrap: true }),
+    a({ v: d.amount, bold: true, wrap: true, fmt: EUR }), a({ v: d.payDate, size: 11, bold: true, wrap: true }), a({ v: d.paid, size: 11, bold: true, wrap: true, fmt: EUR }), a({ v: d.note, size: 11 }), ] }));
+  void title;
+  return { name: "DHL_FATURAT", sheet: "DHL FATURAT", orientation: "landscape", widths, rows, merges: [] };
+}
