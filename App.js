@@ -27,6 +27,7 @@ import PlotDetail from "./src/PlotDetail";
 import Reminders from "./src/Reminders";
 import Import from "./src/Import";
 import Start from "./src/Start";
+import Assistant from "./src/Assistant";
 
 const ROLE = { admin: "Administrator", staf: "Staf", grumbullues: "Grumbullues", fermer: "Fermer" };
 
@@ -169,6 +170,7 @@ export default function App() {
   else if (tab === "magazine") body = <Stock key={cid} cid={cid} role={role} onNew={() => setForm("magazine")} />;
   else if (tab === "mostra") body = <Samples key={cid} cid={cid} role={role} onNew={() => setForm("mostra")} />;
   else if (tab === "importo") body = <Import key={cid} cid={cid} preset={importEnt} onGo={go} />;
+  else if (tab === "asistenti") body = <Assistant key={cid} cid={cid} onGo={go} />;
   else if (tab === "fillimi") body = <Start key={cid} cid={cid} role={role} onGo={go} onForm={(k) => setForm(k)} onImport={goImport} />;
   else if (tab === "raporte") body = <Reports cid={cid} />;
   else body = <Users cid={cid} me={session.user.id} />;

@@ -1,5 +1,5 @@
-// Importim nga Excel / CSV: skedari → kolonat → importimi. Pa shkruar asnjë rresht me dorë.
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+// Importim nga Excel / CSV: shablloni → skedari → kolonat → importimi.
+import React, { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, FlatList, Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as FileSystem from "expo-file-system";
@@ -7,18 +7,15 @@ import * as Sharing from "expo-sharing";
 import { sb } from "./supabase";
 import { pickSpreadsheet } from "./uploads";
 import { readWorkbook, headerOf, guessHeaderRow } from "./import/parse";
-import { ENTITIES, ENTITY_ORDER, guessMapping, prepareRows, buildContext, templateCsv, fieldsOf } from "./import/spec";
+import { ENTITIES, ENTITY_ORDER, guessMapping, prepareRows, fieldsOf, norm } from "./import/spec";
+import { buildTemplateWorkbook, templateSheetName } from "./import/template";
+import { loadContext, persist, importRows } from "./import/run";
 import { s, C, Btn, Card, Chip, ChipRow, ErrorBox, InfoBox, SectionTitle, Segmented, BackBar } from "./ui";
 
 const ENTITY_TAB = { zones: "zonat", farmers: "parcelat", plots: "parcelat", products: null };
 const ACTION_LABEL = { create: "I ri", update: "Përditësim", skip: "Ekziston" };
 const ACTION_TONE = { create: "ok", update: "info", skip: "warn" };
-
-const chunk = (arr, n) => {
-  const out = [];
-  for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n));
-  return out;
-};
+const ORDER_ALL = ["zones", "farmers", "products", "plots"];
 
 function Picker({ open, title, options, selected, onPick, onClose }) {
   return (
@@ -66,32 +63,47 @@ export default function Import({ cid, preset, onGo }) {
   const [mode, setMode] = useState("skip");
   const [ctx, setCtx] = useState(null);
   const [picking, setPicking] = useState(null);
-  const [result, setResult] = useState(null);
+  const [result, setResult] = useState(null);   // { rows: [ {entityKey, created...} ] }
+  const [batch, setBatch] = useState(false);
 
   const entity = entityKey ? ENTITIES[entityKey] : null;
   const sheet = wb?.sheets?.[sheetIdx];
   const headers = useMemo(() => (sheet ? headerOf(sheet.rows[headerRow] || []) : []), [sheet, headerRow]);
   const dataRows = useMemo(() => (sheet ? sheet.rows.slice(headerRow + 1).filter((r) => r.some((c) => String(c ?? "").trim() !== "")) : []), [sheet, headerRow]);
-
-  // kolonat e skedarit si opsione për zgjedhësin
   const columnOptions = useMemo(
-    () => headers.map((h, i) => ({ index: i, label: h ? `${h}` : `Kolona ${i + 1} (pa titull)` })).filter((o) => headers[o.index]),
+    () => headers.map((h, i) => ({ index: i, label: h || `Kolona ${i + 1}` })).filter((o) => headers[o.index] !== ""),
     [headers]
   );
 
-  const loadCtx = useCallback(async () => {
-    const [z, f, p, pr] = await Promise.all([
-      sb.from("zones").select("id,code,name").eq("company_id", cid),
-      sb.from("farmers").select("id,first_name,last_name,id_number,phone,zone_code").eq("company_id", cid),
-      sb.from("plots").select("id,code,name").eq("company_id", cid),
-      sb.from("products").select("id,code,name").eq("company_id", cid),
-    ]);
-    const e = z.error || f.error || p.error || pr.error;
-    if (e) throw new Error("Të dhënat ekzistuese nuk u lexuan: " + e.message);
-    setCtx(buildContext({ zones: z.data || [], farmers: f.data || [], plots: p.data || [], products: pr.data || [] }));
-  }, [cid]);
+  const refreshCtx = async () => setCtx(await loadContext(sb, cid));
 
-  const openFile = async () => {
+  const downloadTemplate = async () => {
+    setErr(""); setLoading(true);
+    try {
+      const base64 = await buildTemplateWorkbook();
+      const path = `${FileSystem.cacheDirectory}BioBes-Import-Shabllon.xlsx`;
+      await FileSystem.writeAsStringAsync(path, base64, { encoding: FileSystem.EncodingType.Base64 });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(path, {
+          mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          dialogTitle: "Shablloni i importimit",
+          UTI: "org.openxmlformats.spreadsheetml.sheet",
+        });
+      } else {
+        setErr("Shkarkimi nuk mbështetet në këtë pajisje. Skedari ruhet te " + path);
+      }
+    } catch (e) { setErr(e.message || "Shablloni nuk u përgatit"); }
+    finally { setLoading(false); }
+  };
+
+  const sheetForEntity = (book, key) => {
+    const want = norm(templateSheetName(key));
+    const i = (book?.sheets || []).findIndex((sh) => norm(sh.name) === want);
+    if (i >= 0) return i;
+    return (book?.sheets || []).findIndex((sh) => sh.rows.length > 1 && sh.rows.some((r) => r.filter((c) => String(c ?? "").trim()).length > 1));
+  };
+
+  const openFile = async (all = false) => {
     setErr("");
     try {
       const picked = await pickSpreadsheet();
@@ -100,13 +112,37 @@ export default function Import({ cid, preset, onGo }) {
       const base64 = await FileSystem.readAsStringAsync(picked.uri, { encoding: FileSystem.EncodingType.Base64 });
       const book = await readWorkbook({ base64, name: picked.name });
       if (!book.sheets.length) throw new Error("Skedari s'ka asnjë fletë me të dhëna.");
-      const hRow = guessHeaderRow(book.sheets[0].rows);
       setFile({ name: picked.name, size: picked.size });
       setWb(book);
-      setSheetIdx(0);
-      setHeaderRow(hRow);
-      setMapping(guessMapping(headerOf(book.sheets[0].rows[hRow] || []), entityKey));
-      if (!ctx) await loadCtx();
+      if (!ctx) await refreshCtx();
+
+      if (all) {
+        const found = ORDER_ALL.filter((k) => (book.sheets || []).some((sh) => norm(sh.name) === norm(templateSheetName(k))));
+        if (!found.length) throw new Error("Skedari nuk përmban fletët «Zonat», «Fermerët», «Parcelat» ose «Produktet».");
+        const rows = [];
+        for (const k of found) {
+          const i = sheetForEntity(book, k);
+          const sh = book.sheets[i];
+          const hr = guessHeaderRow(sh.rows);
+          const data = sh.rows.slice(hr + 1).filter((r) => r.some((c) => String(c ?? "").trim() !== ""));
+          if (!data.length) continue;
+          const mp = guessMapping(headerOf(sh.rows[hr] || []), k);
+          const res = await importRows(sb, cid, k, data, mp, { mode: "skip", lineOffset: hr + 1 });
+          rows.push(res);
+        }
+        await refreshCtx();
+        setBatch(true);
+        setResult({ rows });
+        setStep("done");
+        return;
+      }
+
+      const i = Math.max(0, sheetForEntity(book, entityKey));
+      const hr = guessHeaderRow(book.sheets[i].rows);
+      setSheetIdx(i);
+      setHeaderRow(hr);
+      setMapping(guessMapping(headerOf(book.sheets[i].rows[hr] || []), entityKey));
+      setBatch(false);
       setStep("map");
     } catch (e) {
       setErr(e.message || "Skedari nuk u lexua");
@@ -116,43 +152,28 @@ export default function Import({ cid, preset, onGo }) {
   };
 
   useEffect(() => {
-    if (wb && entityKey) setMapping(guessMapping(headers, entityKey));
+    if (wb && entityKey && !batch) setMapping(guessMapping(headers, entityKey));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sheetIdx, headerRow, entityKey]);
 
   const prep = useMemo(() => {
-    if (!ctx || !entity || !sheet) return null;
+    if (!ctx || !entity || !sheet || batch) return null;
     try {
       return prepareRows(entityKey, mapping, dataRows, ctx, { mode, lineOffset: headerRow + 1 });
     } catch (e) {
       return { ready: [], errors: [{ line: 0, message: e.message }], counts: { total: dataRows.length, create: 0, update: 0, skip: 0, error: 1 } };
     }
-  }, [ctx, entity, entityKey, mapping, dataRows, mode, headerRow, sheet]);
+  }, [ctx, entity, entityKey, mapping, dataRows, mode, headerRow, sheet, batch]);
 
   const run = async () => {
     if (!prep || !entity) return;
     setLoading(true); setErr("");
-    const table = entity.table;
-    const todo = prep.ready.filter((r) => r.action !== "skip");
-    let created = 0, updated = 0;
-    const failed = [];
     try {
-      for (const part of chunk(todo.filter((r) => r.action === "create"), 40)) {
-        const payload = part.map((r) => ({ company_id: cid, ...r.values }));
-        const { error } = await sb.from(table).insert(payload);
-        if (!error) { created += payload.length; continue; }
-        for (const r of part) {
-          const { error: e1 } = await sb.from(table).insert({ company_id: cid, ...r.values });
-          if (e1) failed.push({ line: r.line, message: e1.message }); else created++;
-        }
-      }
-      for (const r of todo.filter((r) => r.action === "update" && r.id)) {
-        const { error } = await sb.from(table).update(r.values).eq("id", r.id).eq("company_id", cid);
-        if (error) failed.push({ line: r.line, message: error.message }); else updated++;
-      }
-      setResult({ created, updated, skipped: prep.counts.skip, failed, table: entity.table });
+      const res = await persist(sb, cid, entityKey, prep.ready);
+      setResult({ rows: [{ entityKey, ...res, errors: prep.errors, counts: prep.counts }] });
+      setBatch(false);
       setStep("done");
-      await loadCtx();
+      await refreshCtx();
     } catch (e) {
       setErr(e.message || "Importimi dështoi");
     } finally {
@@ -160,30 +181,52 @@ export default function Import({ cid, preset, onGo }) {
     }
   };
 
-  const shareTemplate = async () => {
-    try {
-      const csv = "\ufeff" + templateCsv(entityKey);
-      const path = `${FileSystem.cacheDirectory}shabllon-${entityKey}.csv`;
-      await FileSystem.writeAsStringAsync(path, csv, { encoding: FileSystem.EncodingType.UTF8 });
-      if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(path, { mimeType: "text/csv", dialogTitle: "Shablloni i importimit" });
-      else setErr("Shkarkimi nuk mbështetet në këtë pajisje.");
-    } catch (e) { setErr(e.message); }
+  const reset = () => {
+    setFile(null); setWb(null); setSheetIdx(0); setHeaderRow(0); setResult(null); setMapping({}); setBatch(false);
+    setStep(entityKey ? "file" : "entity");
   };
+  const pickEntity = (k) => { setEntityKey(k); setMapping({}); setBatch(false); setStep("file"); };
 
-  const reset = () => { setFile(null); setWb(null); setSheetIdx(0); setHeaderRow(0); setResult(null); setMapping({}); setStep(entityKey ? "file" : "entity"); };
-  const pickEntity = (k) => { setEntityKey(k); setMapping({}); setStep("file"); };
-
-  // ------------------------------------------------------------- 1. entiteti
+  // ------------------------------------------------------------- 1. regjistri
   if (step === "entity") {
     return (
       <ScrollView style={s.screen} contentContainerStyle={s.pad}>
-        <Text style={s.h1}>Importo nga Excel</Text>
-        <Text style={[s.sub, { marginTop: 4 }]}>Çfarë doni të ngarkoni? Mund të përsëritet sa herë të doni — rreshtat që ekzistojnë nuk dublikohen.</Text>
-        <SectionTitle>Hapi 1 · Zgjidhni</SectionTitle>
+        <Text style={s.h1}>Importimi</Text>
+        <Text style={[s.sub, { marginTop: 4 }]}>Një skedar, katër fletë. Shablloni përmban udhëzime, lista zgjedhjeje dhe shembuj.</Text>
+
+        <Card style={{ marginTop: 16, borderColor: C.brand, borderWidth: 1, backgroundColor: C.brandSoft }} onPress={downloadTemplate}>
+          <View style={s.listRow}>
+            <View style={[s.iconCircle, { backgroundColor: "#fff" }]}>
+              <Ionicons name="download-outline" size={20} color={C.brand} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: C.brand, fontWeight: "800", fontSize: 15 }}>Shablloni i importimit (.xlsx)</Text>
+              <Text style={[s.mute, { marginTop: 2 }]}>Zonat · Fermerët · Parcelat · Produktet</Text>
+            </View>
+            {loading ? <ActivityIndicator color={C.brand} /> : <Ionicons name="arrow-down-circle-outline" size={22} color={C.brand} />}
+          </View>
+        </Card>
+
+        <Card onPress={() => openFile(true)}>
+          <View style={s.listRow}>
+            <View style={[s.iconCircle, { backgroundColor: C.infoSoft }]}>
+              <Ionicons name="cloud-upload-outline" size={20} color={C.info} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.h2}>Importo shabllonin e plotë</Text>
+              <Text style={[s.mute, { marginTop: 2 }]}>Të katër fletët njëherësh, sipas radhës së saktë</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={C.mute} />
+          </View>
+        </Card>
+
+        {!!err && <ErrorBox message={err} />}
+
+        <SectionTitle>Ose një regjistër më vete</SectionTitle>
         {ENTITY_ORDER.map((k) => (
           <Card key={k} onPress={() => pickEntity(k)}>
             <View style={s.listRow}>
-              <View style={[s.iconCircle, { backgroundColor: C.brandSoft }]}>
+              <View style={[s.iconCircle, { backgroundColor: C.surfaceAlt }]}>
                 <Ionicons name={ENTITIES[k].icon} size={19} color={C.brand} />
               </View>
               <View style={{ flex: 1 }}>
@@ -194,8 +237,8 @@ export default function Import({ cid, preset, onGo }) {
             </View>
           </Card>
         ))}
-        <InfoBox icon="information-circle" tone="info">
-          Skedari mund të jetë .xlsx ose .csv, me titujt tuaj të kolonave. Aplikacioni i njeh vetë dhe ju lë t'i rregulloni.
+        <InfoBox icon="document-attach-outline">
+          Pranon .xlsx dhe .csv. Titujt e kolonave njihen vetë; nëse skedari juaj ka tituj të tjerë, i lidhni në hapin tjetër.
         </InfoBox>
       </ScrollView>
     );
@@ -205,26 +248,26 @@ export default function Import({ cid, preset, onGo }) {
   if (step === "file") {
     return (
       <ScrollView style={s.screen} contentContainerStyle={s.pad}>
-        <BackBar title="Zgjidh llojin" onBack={() => (preset ? null : setStep("entity"))} />
+        <BackBar title="Importimi" onBack={() => { setErr(""); setStep("entity"); }} />
         <Text style={s.h1}>{entity?.label}</Text>
         <Text style={[s.sub, { marginTop: 4 }]}>{entity?.blurb}</Text>
-        <SectionTitle>Hapi 2 · Skedari</SectionTitle>
-        <Card onPress={openFile}>
+        <SectionTitle>Burimi</SectionTitle>
+        <Card onPress={() => openFile(false)}>
           <View style={s.listRow}>
             <View style={[s.iconCircle, { backgroundColor: C.brandSoft }]}>
-              <Ionicons name="cloud-upload-outline" size={20} color={C.brand} />
+              <Ionicons name="folder-open-outline" size={20} color={C.brand} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={s.h2}>{file ? file.name : "Zgjidh skedarin"}</Text>
-              <Text style={[s.mute, { marginTop: 2 }]}>{file ? "Shtypni për të zëvendësuar" : "Excel (.xlsx) ose CSV — edhe .xls i eksportuar nga sisteme"}</Text>
+              <Text style={[s.mute, { marginTop: 2 }]}>{file ? "Shtypni për ta zëvendësuar" : "Excel (.xlsx) ose CSV"}</Text>
             </View>
-            {loading ? <ActivityIndicator color={C.brand} /> : <Ionicons name="folder-open-outline" size={20} color={C.mute} />}
+            {loading ? <ActivityIndicator color={C.brand} /> : <Ionicons name="chevron-forward" size={18} color={C.mute} />}
           </View>
         </Card>
-        {!!err && <ErrorBox message={err} onRetry={openFile} />}
-        <Btn title="Shkarko shabllonin" alt icon="download-outline" onPress={shareTemplate} />
-        <InfoBox icon="bulb-outline">
-          Ka rëndësi vetëm që titujt e kolonave të përshkruajnë përmbajtjen (p.sh. «Emri», «Sipërfaqja», «Telefoni»). Në hapin tjetër i lidhni me fushat.
+        {!!err && <ErrorBox message={err} onRetry={() => openFile(false)} />}
+        <Btn title="Shablloni i importimit" alt icon="download-outline" onPress={downloadTemplate} busy={loading} />
+        <InfoBox icon="information-circle">
+          Shablloni ka nga një fletë për çdo regjistër dhe e gjen vetë fletën «{entity ? templateSheetName(entityKey) : ""}» kur e importoni.
         </InfoBox>
       </ScrollView>
     );
@@ -234,14 +277,12 @@ export default function Import({ cid, preset, onGo }) {
   if (step === "map") {
     const ready = prep?.ready || [];
     const errs = prep?.errors || [];
-    const canRun = ready.some((r) => r.action !== "skip") || prep?.counts?.skip > 0;
+    const total = (prep?.counts.create || 0) + (prep?.counts.update || 0);
     return (
-      <ScrollView style={s.screen} contentContainerStyle={[s.pad, { paddingBottom: 40 }]} keyboardShouldPersistTaps="handled">
-        <BackBar title="Skedari" onBack={() => setStep("file")} />
-        <Text style={s.h1}>Lidh kolonat</Text>
-        <Text style={[s.sub, { marginTop: 4 }]}>
-          {file?.name} · {dataRows.length} rreshta
-        </Text>
+      <ScrollView style={s.screen} contentContainerStyle={[s.pad, { paddingBottom: 40 }]}>
+        <BackBar title="Burimi" onBack={() => setStep("file")} />
+        <Text style={s.h1}>Lidhja e kolonave</Text>
+        <Text style={[s.sub, { marginTop: 4 }]}>{file?.name} · {dataRows.length} rreshta</Text>
 
         {wb?.sheets?.length > 1 && (
           <>
@@ -265,7 +306,7 @@ export default function Import({ cid, preset, onGo }) {
           ))}
         </ChipRow>
 
-        <SectionTitle right={<Text style={s.mute}>{Object.keys(mapping).length} / {fieldsOf(entityKey).length}</Text>}>Kolonat tuaja</SectionTitle>
+        <SectionTitle right={<Text style={s.mute}>{Object.keys(mapping).length} / {fieldsOf(entityKey).length}</Text>}>Kolonat</SectionTitle>
         {fieldsOf(entityKey).map((f) => (
           <TouchableOpacity key={f.key} style={s.card} onPress={() => setPicking(f.key)} activeOpacity={0.85}>
             <View style={s.listRow}>
@@ -282,7 +323,7 @@ export default function Import({ cid, preset, onGo }) {
           </TouchableOpacity>
         ))}
 
-        <SectionTitle>Nëse rreshti ekziston</SectionTitle>
+        <SectionTitle>Rreshtat që ekzistojnë</SectionTitle>
         <Segmented options={[["skip", "Anashkaloje"], ["update", "Përditësoje"]]} value={mode} onChange={setMode} />
 
         <SectionTitle>Parapamje</SectionTitle>
@@ -335,10 +376,10 @@ export default function Import({ cid, preset, onGo }) {
 
         {!!err && <ErrorBox message={err} />}
         <Btn
-          title={loading ? "Po importohet…" : `Importo ${prep?.counts.create + prep?.counts.update || 0} rreshta`}
+          title={loading ? "Po importohet…" : `Importo ${total} rreshta`}
           onPress={run}
           busy={loading}
-          disabled={!canRun || loading || !(prep?.counts.create + prep?.counts.update)}
+          disabled={!total || loading}
         />
         <Btn title="Anulo" alt onPress={reset} />
 
@@ -362,32 +403,45 @@ export default function Import({ cid, preset, onGo }) {
     );
   }
 
-  // ------------------------------------------------------------- 4. rezultati
-  const target = entityKey ? ENTITY_TAB[entityKey] : null;
+  // ------------------------------------------------------------- 4. përfundimi
+  const rows = result?.rows || [];
+  const created = rows.reduce((n, r) => n + (r.created || 0), 0);
+  const updated = rows.reduce((n, r) => n + (r.updated || 0), 0);
+  const skipped = rows.reduce((n, r) => n + (r.skipped || 0), 0);
+  const fails = rows.reduce((n, r) => n + (r.failed?.length || 0), 0);
+  const target = !batch && entityKey ? ENTITY_TAB[entityKey] : "parcelat";
+
   return (
     <ScrollView style={s.screen} contentContainerStyle={s.pad}>
       <Text style={s.h1}>Importimi përfundoi</Text>
-      <Text style={[s.sub, { marginTop: 4 }]}>{entity?.label} · {file?.name}</Text>
+      <Text style={[s.sub, { marginTop: 4 }]}>{file?.name}</Text>
       <View style={[s.card, { flexDirection: "row", marginTop: 16 }]}>
-        {[["Të reja", result?.created || 0, C.ok], ["Përditësuar", result?.updated || 0, C.info], ["Anashkaluar", result?.skipped || 0, C.warn], ["Gabime", result?.failed?.length || 0, (result?.failed?.length ? C.red : C.mute)]].map(([l, v, col], i) => (
+        {[["Të reja", created, C.ok], ["Përditësuar", updated, C.info], ["Anashkaluar", skipped, C.warn], ["Gabime", fails, fails ? C.red : C.mute]].map(([l, v, col], i) => (
           <View key={l} style={{ flex: 1, borderLeftWidth: i ? 1 : 0, borderLeftColor: C.line, paddingLeft: i ? 10 : 0 }}>
             <Text style={{ fontSize: 21, fontWeight: "800", color: col }}>{v}</Text>
             <Text style={s.mute} numberOfLines={1}>{l}</Text>
           </View>
         ))}
       </View>
-      {!!result?.failed?.length && (
-        <>
-          <SectionTitle>Nuk u ruajtën</SectionTitle>
-          {result.failed.slice(0, 10).map((f, i) => (
-            <View key={i} style={[s.errBox, { marginTop: 6 }]}>
-              <Ionicons name="close-circle" size={16} color={C.red} />
-              <Text style={{ flex: 1, color: C.red, fontSize: 12.5 }}>Rreshti {f.line}: {f.message}</Text>
-            </View>
-          ))}
-        </>
-      )}
-      {target && <Btn title="Shiko të dhënat" icon="arrow-forward" onPress={() => onGo(target)} />}
+
+      {rows.map((r) => (
+        <Card key={r.entityKey}>
+          <View style={s.row}>
+            <Text style={{ color: C.ink, fontWeight: "700", flex: 1 }}>{ENTITIES[r.entityKey]?.label}</Text>
+            <Chip label={`+${r.created || 0}${r.updated ? ` · ↻${r.updated}` : ""}`} tone={r.created || r.updated ? "ok" : "neutral"} />
+          </View>
+          <Text style={[s.mute, { marginTop: 4 }]}>
+            {r.created || 0} të reja · {r.updated || 0} përditësuar · {r.skipped || 0} ekzistues · {r.errors?.length || 0} gabime
+          </Text>
+          {!!r.failed?.length && (
+            <Text style={{ color: C.red, fontSize: 12, marginTop: 4 }} numberOfLines={2}>
+              Rreshti {r.failed[0].line}: {r.failed[0].message}
+            </Text>
+          )}
+        </Card>
+      ))}
+
+      <Btn title="Shiko të dhënat" icon="arrow-forward" onPress={() => onGo(target)} />
       <Btn title="Importo skedar tjetër" alt onPress={reset} />
       <Btn title="Kthehu te modulet" alt onPress={() => onGo("modulet")} />
     </ScrollView>

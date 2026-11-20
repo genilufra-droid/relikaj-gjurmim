@@ -25,6 +25,7 @@ const GROUPS = [
   {
     title: "Grumbullimi",
     items: [
+      ["asistenti", "Asistenti", "Regjistro me zë ose shkrim", "mic-outline"],
       ["kujtuesit", "Kujtuesit", "Çka pret veprim sot", "alarm-outline"],
       ["blerje", "Blerjet", "Marrja nga fermerët", "basket-outline"],
       ["mostra", "Mostrat", "Në parcelë ose qendër", "flask-outline"],

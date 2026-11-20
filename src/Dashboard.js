@@ -70,11 +70,18 @@ export default function Dashboard({ cid, role, onGo }) {
           <Text style={[s.mute, { marginBottom: 2 }]}>{todayStr}</Text>
           <Text style={s.h1}>Pasqyra e fermës</Text>
         </View>
-        <TouchableOpacity onPress={() => onGo("kujtuesit")} activeOpacity={0.85}
-          style={{ flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: C.dangerSoft, paddingHorizontal: 11, paddingVertical: 8, borderRadius: 999 }}>
-          <Ionicons name="alarm-outline" size={15} color={C.red} />
-          <Text style={{ color: C.red, fontWeight: "800", fontSize: 12.5 }}>Kujtuesit</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <TouchableOpacity onPress={() => onGo("asistenti")} activeOpacity={0.85}
+            style={{ flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: C.brandSoft, paddingHorizontal: 11, paddingVertical: 8, borderRadius: 999, marginRight: 8 }}>
+            <Ionicons name="mic-outline" size={15} color={C.brand} />
+            <Text style={{ color: C.brand, fontWeight: "800", fontSize: 12.5 }}>Zëri</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => onGo("kujtuesit")} activeOpacity={0.85}
+            style={{ flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: C.dangerSoft, paddingHorizontal: 11, paddingVertical: 8, borderRadius: 999 }}>
+            <Ionicons name="alarm-outline" size={15} color={C.red} />
+            <Text style={{ color: C.red, fontWeight: "800", fontSize: 12.5 }}>Kujtuesit</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {!!err && <ErrorBox message={"Statistikat nuk u ngarkuan: " + err} onRetry={load} />}

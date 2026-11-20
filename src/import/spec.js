@@ -49,8 +49,8 @@ const ownershipMap = {
 };
 const statusMap = {
   active: "active", aktiv: "active", aktive: "active", "ne prodhim": "active", "ne perdorim": "active", kultivuar: "active",
-  fallow: "fallow", djerr: "fallow", djerre: "fallow", "pushim": "fallow", "e papunuar": "fallow",
-  resting: "resting", "ne pushim": "resting", prehje: "resting",
+  fallow: "fallow", djerr: "fallow", djerre: "fallow", "e papunuar": "fallow", papunuar: "fallow",
+  resting: "resting", pushim: "resting", "ne pushim": "resting", prehje: "resting",
 };
 const ENUM_MAPS = { growing: growingMap, irrigation: irrigationMap, ownership: ownershipMap, status: statusMap };
 
@@ -350,19 +350,3 @@ export function prepareRows(entityKey, mapping, rows, ctx, opts = {}) {
 }
 
 // ------------------------------------------------------------------ shabllonet
-const TEMPLATE_ROWS = {
-  zones: { code: "W01", name: "Tepelenë", fair_wild: "po", region: "Gjirokastër", collection_point: "Depo Tepelenë", collector_name: "Ilir Koçi", note: "" },
-  farmers: { full_name: "Ilir Koçi", first_name: "", last_name: "", phone: "069 12 34 567", id_number: "K12345678", zone_code: "W01", address: "Tepelenë", family_size: "4", group_name: "Grupi 1", note: "" },
-  plots: { name: "Parcela 1", code: "D01", area_ha: "2,5", zone_code: "W01", farmer_ref: "Ilir Koçi", lat: "40.296", lng: "20.019", ownership: "ime", status: "në prodhim", soil_type: "argjilore", altitude: "320", organic: "po", growing: "arë", irrigation: "pikëz", note: "" },
-  products: { name: "Ferrë e zezë", code: "115", latin: "Rubus fruticosus", part: "frut" },
-};
-
-export function templateCsv(entityKey) {
-  const entity = getEntity(entityKey);
-  if (!entity) return "";
-  const esc = (v) => (/[",;\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v));
-  const row = TEMPLATE_ROWS[entityKey] || {};
-  const cols = entity.fields.map((f) => f.label);
-  const vals = entity.fields.map((f) => row[f.key] ?? "");
-  return [cols.map(esc).join(","), vals.map(esc).join(",")].join("\n") + "\n";
-}
