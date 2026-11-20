@@ -61,3 +61,8 @@ Rrjedha e plotë e fjalëkalimit, siç pritet nga një sistem i vërtetë:
 
 ## v0.7.1 — rregullim i ekraneve me listë
 Ekranet **Parcelat, Shpenzimet/Blerjet, Mostrat, Zonat dhe Puna në tokë** binin (ekran bosh i gjelbër) sapo lista kishte të paktën një rresht, sepse përdornin `ChipRow` pa e importuar. U rregullua në të pesë skedarët, u shtua **kufiri i gabimeve** (`src/ErrorBoundary.js`) që një gabim i ardhshëm të shfaqë mesazh e «Provo përsëri» në vend të ekranit bosh, dhe u shtua testi i renderimit të 19 ekraneve (`npm test`, `tests/smoke/`). Skedari `src/reports.js` u riemërua `src/reportBuilder.js` që të mos përplaset me `src/Reports.js` në sistemet me shkronja të vogla/të mëdha të pandryshueshme (macOS/Windows).
+
+## Faza 8 — grumbulluesi dhe email-i i llogarive (v0.8.0)
+- **Pamja e grumbulluesit** (`src/Field.js`): kur roli është `grumbullues`, tab-i «Pasqyra» hapet me punën e ditës — dy veprime të mëdha (**Blerje**, **Mostër**), sasia dhe vlera e sotme, dhe lista e regjistrimeve të ditës me tërheqje për rifreskim. Pa menu të panevojshme.
+- **Email i vërtetë për llogaritë ekzistuese**: te «Përdoruesit» → anëtari → fusha *Email i llogarisë* + «Ruaj emailin» (veprim i ri `set_email` te `admin-users`, v2 në server). Email-i konfirmohet menjëherë, fjalëkalimi nuk ndryshon, dhe nga ai moment llogaria hyn me email e mund të rivendosë vetë fjalëkalimin. Email-et e brendshme `@login.relikaj.al` refuzohen.
+- Testet e renderimit mbulojnë tani 20 ekrane, përfshirë `Field` me regjistrime.
