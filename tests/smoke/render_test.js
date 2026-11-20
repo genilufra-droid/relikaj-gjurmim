@@ -26,6 +26,7 @@ import Cultivations from "../../src/Cultivations";
 import Inputs from "../../src/Inputs";
 import Field from "../../src/Field";
 import Backup from "../../src/Backup";
+import PrintCenter from "../../src/PrintCenter";
 
 const up = () => {};
 const CASES = [
@@ -35,6 +36,7 @@ const CASES = [
   ["Dashboard", <Dashboard cid={2} role="admin" onGo={up} />],
   ["Field (grumbullues)", <Field cid={2} name="Arben" onNew={up} onGo={up} />],
   ["Backup", <Backup cid={2} />],
+  ["PrintCenter", <PrintCenter cid={2} role="admin" />],
   ["Trace", <Trace cid={2} />],
   ["Reports", <Reports cid={2} />],
   ["Import", <Import cid={2} onGo={up} />],

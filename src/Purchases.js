@@ -61,7 +61,7 @@ export function PurchaseForm({ cid, onDone }) {
   );
 }
 
-export default function Purchases({ cid, role, onNew }) {
+export default function Purchases({ cid, role, onNew, onPrint }) {
   const [rows, setRows] = useState([]), [err, setErr] = useState(""), [loading, setLoading] = useState(true), [q, setQ] = useState("");
   const load = useCallback(async () => {
     setLoading(true);
@@ -96,6 +96,7 @@ export default function Purchases({ cid, role, onNew }) {
           <SearchBar value={q} onChange={setQ} placeholder="Lot, fermer, produkt ose grumbullues…" />
           {!!err && <ErrorBox message={err} onRetry={load} />}
           {canWrite && <Btn title="+ Blerje e re" icon="add" onPress={onNew} />}
+          {!!onPrint && <Btn title="Fatura dhe fletë hyrje" icon="print-outline" alt onPress={onPrint} />}
           {loading && rows.length === 0 && <Loading />}
         </View>
       }

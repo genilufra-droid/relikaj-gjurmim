@@ -51,7 +51,7 @@ export function StockForm({ cid, onDone }) {
   );
 }
 
-export default function Stock({ cid, role, onNew }) {
+export default function Stock({ cid, role, onNew, onPrint }) {
   const [rows, setRows] = useState([]), [err, setErr] = useState("");
   const load = useCallback(async () => {
     const { data, error } = await sb.from("lot_summary").select("*").eq("company_id", cid).order("lot_code");
@@ -61,7 +61,8 @@ export default function Stock({ cid, role, onNew }) {
   return (
     <FlatList
       style={s.screen} contentContainerStyle={s.pad} data={rows} keyExtractor={(r) => r.lot_code} onRefresh={load} refreshing={false}
-      ListHeaderComponent={<View><Text style={s.h1}>Magazina sipas lotit</Text>{(role === "admin" || role === "staf" || role === "grumbullues") && <Btn title="+ Dorëzim / eksport / gjendje fillestare" onPress={onNew} />}{!!err && <Text style={s.err}>{err}</Text>}</View>}
+      ListHeaderComponent={<View><Text style={s.h1}>Magazina sipas lotit</Text>{(role === "admin" || role === "staf" || role === "grumbullues") && <Btn title="+ Dorëzim / eksport / gjendje fillestare" onPress={onNew} />}
+        {!!onPrint && <Btn title="Fatura dhe fletë dalje" icon="print-outline" alt onPress={onPrint} />}{!!err && <Text style={s.err}>{err}</Text>}</View>}
       ListEmptyComponent={<Text style={s.mute}>Asnjë lot ende.</Text>}
       renderItem={({ item: r }) => (
         <View style={[s.card, { marginTop: 10 }]}>
