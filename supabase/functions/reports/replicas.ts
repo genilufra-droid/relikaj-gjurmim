@@ -81,3 +81,23 @@ export function dhlReplica(title: string, list: DhlRow[]): Report {
   void title;
   return { name: "DHL_FATURAT", sheet: "DHL FATURAT", orientation: "landscape", widths, rows, merges: [] };
 }
+
+export interface ProtocolRow { date: string; client: string; country: string; product: string; code: string; tracking: string; comment: string; result: string }
+
+/** «PROTOKOLLI MOSTRAVE» — njësoj si fleta e parë e 2026_PROTOKOLL_I_MOSTRAVE. */
+export function protocolReplica(list: ProtocolRow[]): Report {
+  const widths = [20.14, 48.43, 20.43, 46.29, 35.71, 33.43, 77.86, 243.29, 49.86];
+  const k = (o: Partial<Cell>): Cell => ({ v: null, fontName: "Calibri", size: 16, valign: "m", ...o });
+  const hd = (v: string, o: Partial<Cell>): Cell => k({ v, bold: true, color: "388195", align: "c", wrap: true, sides: "lr", ...o });
+  const rows: Row[] = [{ height: 62.25, header: true, cells: [
+    hd("DATA E MARRJES MOSTRES", { align: undefined }), hd("Klienti ", {}), hd("SHTETI", {}), hd("PRODUKTI", { color: undefined, align: undefined }), hd("KODI", { wrap: false }),
+    hd("Tracking number", { fontName: "Arial", bold: false, color: "4F81BD" }), hd("KOMENT", { fill: "FCE4D6", sides: "l" }),
+    hd("REZULTATE ANALIZAVE ", { color: "002060", fill: "D9E1F2", sides: "lrtb" }), hd("STATUSI", { sides: "r" }),
+  ] }];
+  for (const d of list) rows.push({ height: 29.25, cells: [
+    k({ v: d.date, fill: "FFFF00", sides: "lrtb" }), k({ v: d.client, sides: "lrt" }), k({ v: d.country, sides: "lrt" }), k({ v: d.product, sides: "lrt", wrap: true }),
+    k({ v: d.code, bold: true, align: "c", sides: "lrt" }), k({ v: d.tracking, size: 18, bold: true, color: "4F81BD", align: "c" }),
+    k({ v: d.comment, bold: true, fill: "FCE4D6", sides: "lrtb", align: "c", wrap: true }), k({ v: d.result, bold: true, color: "002060", fill: "D9E1F2" }), blank(),
+  ] });
+  return { name: "PROTOKOLLI_MOSTRAVE", sheet: "PROTOKOLLI MOSTRAVE", orientation: "landscape", widths, rows, merges: [] };
+}

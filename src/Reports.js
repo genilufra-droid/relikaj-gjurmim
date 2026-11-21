@@ -294,6 +294,12 @@ export default function Reports({ cid }) {
         busyP={busy === "dhp"} busyX={busy === "dhx"}
       />
       <ReportRow
+        title="Protokolli i mostrave (Excel)"
+        text="Data, klienti, produkti, kodi, tracking, koment dhe rezultate — si në Excel"
+        onP={both("pm", { type: "protocol" }).p} onX={both("pm", { type: "protocol" }).x}
+        busyP={busy === "pmp"} busyX={busy === "pmx"}
+      />
+      <ReportRow
         title="Lista e mbledhësve"
         text="Fermerët, zonat, familjet dhe dokumentet"
         onP={both("g", { type: "growers" }).p} onX={both("g", { type: "growers" }).x}
