@@ -2,7 +2,7 @@
 import { buildXlsx } from "./xlsx.ts";
 import { buildPdf } from "./pdf.ts";
 import { farmerReport, growersReport, inputsReport, lotSheetReport, plotReport, plotsReport, summaryReport, tableReport, tasksReport, traceReport, zonesReport } from "./defs.ts";
-import { dhlReplica, fedexReplica, kultivimeReplica, protocolReplica, rotationReplica } from "./replicas.ts";
+import { dhlReplica, fedexReplica, kultivimeReplica, labLedgerReplica, protocolReplica, rotationReplica } from "./replicas.ts";
 import type { Report } from "./types.ts";
 
 // Pjesa e klientit Supabase që përdorim (lehtëson testimin)
@@ -10,9 +10,9 @@ export interface Sb { from(table: string): any }
 
 export interface Req {
   type: "summary" | "lot" | "farmer" | "growers" | "trace" | "plots" | "inputs" | "tasks" | "zones"
-    | "purchases" | "payments" | "samples" | "operations" | "reminders" | "plot" | "cultivation" | "rotation" | "shipments" | "protocol";
+    | "purchases" | "payments" | "samples" | "operations" | "reminders" | "plot" | "cultivation" | "rotation" | "shipments" | "protocol" | "lab_ledger";
   format: "xlsx" | "pdf"; company_id: number; year?: number; lot_code?: string; farmer_id?: number;
-  from?: string; to?: string; product_id?: number; zone_id?: number; plot_id?: number; status?: string; carrier?: string;
+  from?: string; to?: string; product_id?: number; zone_id?: number; plot_id?: number; status?: string; carrier?: string; account?: string;
 }
 export class ReportError extends Error { constructor(msg: string, public status = 400) { super(msg); } }
 
@@ -367,6 +367,14 @@ export async function makeReport(sb: Sb, r: Req): Promise<Report> {
     const rows = all.filter((x: any) => inRange(x.date, r.from, r.to) && (r.from || r.to || String(x.date).startsWith(String(year))));
     return protocolReplica(rows.map((x: any) => ({ date: dDots2(x.date), client: x.customers?.name ?? "", country: x.customers?.country ?? "", product: x.product_text ?? "",
       code: x.code ?? "", tracking: x.shipments?.tracking_no ?? "", comment: x.comment ?? "", result: x.result ?? "" })));
+  }
+  if (r.type === "lab_ledger") {
+    // Si «ANALIZAT GBA»: kartela e llogarisë me laboratorin — debi (parapagime), kredi (shërbime), gjendja
+    const account = (r.account || "GBA").trim();
+    const all = await q(sb.from("lab_entries").select("date,ref,description,debit,credit,account").eq("company_id", cid).order("date").order("id"));
+    const rows = all.filter((x: any) => String(x.account).toLowerCase() === account.toLowerCase() && inRange(x.date, r.from, r.to));
+    return labLedgerReplica(account, rows.map((x: any) => ({ date: dDots2(x.date), ref: x.ref ?? "", description: x.description ?? "",
+      debit: Number(x.debit) || null, credit: Number(x.credit) || null })));
   }
   throw new ReportError("Lloji i raportit nuk njihet");
 }

@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { s, C, Btn, Field, Card, Chip, ChipRow, ErrorBox, SectionTitle, today } from "./ui";
 import Lookup, { LOOKUPS } from "./Lookup";
 import { downloadReport } from "./reportBuilder";
+import LabAccount from "./LabAccount";
 
 const iso = (d) => d.toISOString().slice(0, 10);
 const PRESETS = [["month", "Ky muaj"], ["year", "Ky vit"], ["last", "Viti i kaluar"], ["all", "Gjithë"], ["custom", "Vetë"]];
@@ -73,6 +74,7 @@ export default function Reports({ cid }) {
   const [plot, setPlot] = useState(null);
   const [lot, setLot] = useState("");
   const [busy, setBusy] = useState("");
+  const [labAcc, setLabAcc] = useState("GBA"), [labOpen, setLabOpen] = useState(false);
   const [msg, setMsg] = useState(""), [err, setErr] = useState("");
 
   const pickPreset = (k) => {
@@ -305,6 +307,14 @@ export default function Reports({ cid }) {
         onP={both("fx", { type: "shipments", carrier: "FedEx" }).p} onX={both("fx", { type: "shipments", carrier: "FedEx" }).x}
         busyP={busy === "fxp"} busyX={busy === "fxx"}
       />
+      <ReportRow
+        title="Kartela e llogarisë (GBA)"
+        text="Parapagime, shërbime dhe gjendja me laboratorin — si në Excel"
+        onP={both("lg", { type: "lab_ledger", account: labAcc }).p} onX={both("lg", { type: "lab_ledger", account: labAcc }).x}
+        busyP={busy === "lgp"} busyX={busy === "lgx"}
+      />
+      <Btn title={labOpen ? "Mbyll kartelën e llogarisë" : "Hap kartelën e llogarisë (hyrje)"} alt onPress={() => setLabOpen((v) => !v)} />
+      {labOpen && <LabAccount cid={cid} account={labAcc} onAccount={setLabAcc} />}
       <ReportRow
         title="Lista e mbledhësve"
         text="Fermerët, zonat, familjet dhe dokumentet"

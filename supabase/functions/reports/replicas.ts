@@ -151,3 +151,25 @@ export function fedexReplica(list: FedexRow[]): Report {
   ] });
   return { name: "FATURA_FEDEX", sheet: "FATURA FEDEX", orientation: "landscape", widths, rows, merges: [] };
 }
+
+export interface LabEntry { date: string; ref: string; description: string; debit: number | null; credit: number | null }
+
+/** «Kartela e Llogarisë GBA» — Dt. Regj., Nr ref., Përshkrimi, Debi, Kredi, totali dhe gjendja. */
+export function labLedgerReplica(account: string, list: LabEntry[], note?: string): Report {
+  const EUR = '_([$€-2]\\ * #,##0.00_);_([$€-2]\\ * \\(#,##0.00\\);_([$€-2]\\ * "-"??_);_(@_)';
+  const widths = [13.43, 19.29, 75.71, 17.0, 15.57];
+  const G = "008000", F = "F0FFF0";
+  const rows: Row[] = [], merges: Report["merges"] = [[0, 0, 0, 4], [1, 0, 2, 0], [1, 1, 2, 1], [1, 2, 2, 2], [1, 3, 1, 4]];
+  const hd = (v: string | null, sides: string, o: Partial<Cell> = {}): Cell => ({ v, bold: true, size: 12, color: G, fill: F, sides, wrap: true, ...o });
+  rows.push({ height: 28.5, cells: [{ v: `Kartela e Llogarise ${account}`, size: 22, bold: true, color: G, wrap: true }, blank(), blank(), blank(), blank()] });
+  rows.push({ height: 15.6, header: true, cells: [hd("Dt. Regj.", "lrtb"), hd("Nr ref.", "lrtb"), hd("Përshkrimi", "lrtb"), hd("Gjendja ne monedhe baze", "rtb"), blank("rtb")] });
+  rows.push({ height: 16.5, header: true, cells: [blank("lrb"), blank("lrb"), blank("lrb"), hd("Debi", "rb", { fmt: EUR }), hd("Kredi", "rb", { fmt: EUR })] });
+  const b = (o: Partial<Cell>): Cell => ({ v: null, size: 12, sides: "rb", ...o });
+  for (const e of list) rows.push({ height: 18.75, cells: [b({ v: e.date, sides: "lrb" }), b({ v: e.ref }), b({ v: e.description }),
+    b({ v: e.debit || null, bold: true, wrap: true, fmt: EUR }), b({ v: e.credit || null, bold: true, wrap: true, fmt: EUR })] });
+  const D = list.reduce((a, e) => a + (e.debit ?? 0), 0), K = list.reduce((a, e) => a + (e.credit ?? 0), 0);
+  rows.push({ height: 18.75, cells: [b({ sides: "lrb" }), b({}), b({ v: "TOTALI", bold: true }), b({ v: D, bold: true, fmt: EUR }), b({ v: K, bold: true, fmt: EUR })] });
+  rows.push({ height: 18.75, cells: [blank(), blank(), { v: "GJENDJE", bold: true, size: 12 }, { v: K - D, bold: true, size: 12, fmt: EUR }, blank()] });
+  if (note) { rows.push({ height: 15, cells: widths.map(() => blank()) }, { height: 15, cells: [{ v: note, italic: true }, blank(), blank(), blank(), blank()] }); }
+  return { name: `Kartela_${account.replace(/\W+/g, "_")}`, sheet: `ANALIZAT ${account}`.slice(0, 31), orientation: "portrait", widths, rows, merges };
+}

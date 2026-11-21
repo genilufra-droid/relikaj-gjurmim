@@ -25,6 +25,7 @@ const T: Record<string, any[]> = {
   leases: [{ company_id: 1, plot_id: 1, owner_name: "Pronari X", start_date: "2026-01-01", end_date: "2026-12-15", status: "active", rent_amount: 120000, plots: { name: "Parcela 1", code: "K01" } }],
   documents: [{ id: 1, company_id: 1, plot_id: 1 }],
   cultivations: [{ company_id: 1, plot_id: 1, product_id: 1, expected_yield_kg: 6500, sowing_date: "2026-03-01", expected_harvest: "2026-07-01", stage: "growing", plots: { name: "Parcela 1", code: "K01" }, products: { name: "Mjedër" } }],
+  lab_entries: [{ company_id: 1, account: "GBA", date: "2026-03-13", ref: "NR.2024RE11048", description: "PARAPAGIM PER ANALIZA BMA", debit: 3000, credit: 0 }, { company_id: 1, account: "GBA", date: "2026-03-13", ref: "506/2024", description: "SHERBIMI DERI DT.13.12.2024", debit: 0, credit: 1220.74 }],
   shipments: [{ company_id: 1, tracking_no: "4259067632", carrier: "DHL", ship_date: "2026-01-10", recipient: "GBA", country: "Gjermani", invoice_date: "2026-01-20", amount_eur: 48.63, paid_date: "2026-02-04", paid_eur: 48.63, note: "", customers: null },
               { company_id: 1, tracking_no: "7733115110", carrier: "FedEx", ship_date: "2026-02-07", recipient: "", country: "", invoice_date: "2026-02-10", amount_eur: 70, paid_date: null, paid_eur: 0, note: "mostër kalendule", customers: { name: "HIGASHIMARU", country: "Japoni" } }],
   plots: [{ id: 1, company_id: 1, name: "Parcela 1", code: "K01", area_ha: 2.5, ownership: "leased", status: "active", altitude: 450, organic: true, lat: 41.3, lng: 19.4, farmers: { first_name: "Mersin", last_name: "Sinani" }, zones: { code: "W010F/1a", collector_name: "Ilir Koçi", collection_point: "Pika Tepelenë" } }],
@@ -36,7 +37,7 @@ const fake = { from(t: string) {
   return c;
 } };
 mkdirSync("/var/tmp/rep2", { recursive: true });
-for (const type of ["summary", "lot", "farmer", "growers", "trace", "plots", "inputs", "tasks", "zones", "purchases", "payments", "samples", "operations", "reminders", "plot", "cultivation", "rotation", "shipments", "protocol"] as const) for (const format of ["xlsx", "pdf"] as const) {
+for (const type of ["summary", "lot", "farmer", "growers", "trace", "plots", "inputs", "tasks", "zones", "purchases", "payments", "samples", "operations", "reminders", "plot", "cultivation", "rotation", "shipments", "protocol", "lab_ledger"] as const) for (const format of ["xlsx", "pdf"] as const) {
   const r = await generate(fake, { type, format, company_id: 1, year: 2026, lot_code: "W010F/1a-I-115-26", farmer_id: 1, plot_id: 1, from: "2026-01-01", to: "2026-12-31" });
   writeFileSync(`/var/tmp/rep2/${r.filename}`, r.bytes);
   console.log(type, format, r.filename, r.bytes.length);
