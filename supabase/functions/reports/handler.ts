@@ -2,7 +2,7 @@
 import { buildXlsx } from "./xlsx.ts";
 import { buildPdf } from "./pdf.ts";
 import { farmerReport, growersReport, inputsReport, lotSheetReport, plotReport, plotsReport, summaryReport, tableReport, tasksReport, traceReport, zonesReport } from "./defs.ts";
-import { dhlReplica, kultivimeReplica, protocolReplica } from "./replicas.ts";
+import { dhlReplica, fedexReplica, kultivimeReplica, protocolReplica, rotationReplica } from "./replicas.ts";
 import type { Report } from "./types.ts";
 
 // Pjesa e klientit Supabase që përdorim (lehtëson testimin)
@@ -321,7 +321,7 @@ export async function makeReport(sb: Sb, r: Req): Promise<Report> {
     if (!co) throw new ReportError("Kompania nuk u gjet", 404);
     const plots = await q(sb.from("plots").select("id,name,code,area_ha,ownership,status").eq("company_id", cid).order("code"));
     const cults = await q(sb.from("cultivations").select("plot_id,expected_yield_kg,sowing_date,expected_harvest,stage,products(name)").eq("company_id", cid));
-    const years = Array.from({ length: 7 }, (_, i) => year - 4 + i);
+    const years = Array.from({ length: 7 }, (_, i) => year - 4 + i);   // si në Excel: 7 vite
     const yearOf = (c: any) => Number(String(c.sowing_date || c.expected_harvest || "").slice(0, 4)) || null;
     const rows = plots.map((p: any) => {
       const cells = years.map((y) => {
@@ -331,12 +331,19 @@ export async function makeReport(sb: Sb, r: Req): Promise<Report> {
       });
       return [p.code || p.name, `${Number(p.area_ha ?? 0)} ha`, ...cells];
     });
-    return tableReport({
-      name: `Plan_qarkullimi_${year}`, sheet: "PLAN QARKULLIMI", title: `Plan qarkullimi ${years[0]}–${years[years.length - 1]}`,
-      subtitle: `${co.name} · ${rows.length} parcela`,
-      cols: [{ label: "Parcela", width: 11 }, { label: "Sipërfaqja", width: 11, align: "r" }, ...years.map((y) => ({ label: String(y), width: 20 }))],
-      rows,
+    const parent = (p: any) => String(p.code || p.name || "").split("/")[0].trim().toUpperCase();
+    const groups = new Map<string, any[]>();
+    for (const p of plots) { const k = parent(p); groups.set(k, [...(groups.get(k) ?? []), p]); }
+    const out = [...groups.entries()].map(([k, ps]) => {
+      const m2 = (p: any) => Math.round(Number(p.area_ha ?? 0) * 10000);
+      return { code: k, title: `PARCELA: ${k}   ${ps.length === 1 && ps[0].name && ps[0].name !== ps[0].code ? `EMRI: ${ps[0].name}` : ""}`.trim(), totalM2: ps.reduce((a: number, p: any) => a + m2(p), 0),
+        subs: ps.map((p: any) => ({ label: `${p.code || p.name}  ${m2(p)}m2`, byYear: years.map((y) => {
+          const mine = cults.filter((c: any) => c.plot_id === p.id && yearOf(c) === y);
+          if (mine.length) return mine.map((c: any) => `${c.products?.name ?? "?"}${Number(c.expected_yield_kg) ? ` ${Number(c.expected_yield_kg)} kg` : ""}`).join(", ");
+          return y <= year && p.status === "fallow" ? "djerr" : "";
+        }) })) };
     });
+    return rotationReplica(years, out);
   }
   if (r.type === "shipments") {
     // Si «DHL FATURAT»: regjistri i dërgesave dhe faturave të kurierit, me pagesat
@@ -346,6 +353,8 @@ export async function makeReport(sb: Sb, r: Req): Promise<Report> {
     const rows = all.filter((x: any) => inRange(x.ship_date, r.from, r.to) && (!r.carrier || String(x.carrier).toLowerCase() === r.carrier.toLowerCase()));
     const sum = (k: string) => rows.reduce((a: number, x: any) => a + Number(x[k] ?? 0), 0);
     const label = r.carrier || "DHL / FedEx";
+    if (String(r.carrier ?? "").toLowerCase() === "fedex") return fedexReplica(rows.map((x: any) => ({ date: x.invoice_date ? dDots(x.invoice_date) : "", ref: x.tracking_no ?? "", client: x.customers?.name || x.recipient || "",
+      lek: null, currency: "EURO", eur: x.amount_eur == null ? null : Number(x.amount_eur), note: x.note || "" })));
     return dhlReplica(label, rows.map((x: any) => ({
       tracking: x.tracking_no ?? null, shipDate: x.ship_date ? dDots(x.ship_date) : "", recipient: x.customers?.name || x.recipient || "",
       country: x.customers?.country || x.country || "", invoiceDate: x.invoice_date ? dDots(x.invoice_date) : "",

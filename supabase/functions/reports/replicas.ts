@@ -101,3 +101,53 @@ export function protocolReplica(list: ProtocolRow[]): Report {
   ] });
   return { name: "PROTOKOLLI_MOSTRAVE", sheet: "PROTOKOLLI MOSTRAVE", orientation: "landscape", widths, rows, merges: [] };
 }
+
+export interface RotationPlot { code: string; title: string; totalM2: number; subs: { label: string; byYear: string[] }[] }
+
+/** «PLAN QARKULLIMI» — kartela për çdo parcelë: titulli, vitet (çifte kolonash), nënparcelat me kulturat. */
+export function rotationReplica(years: number[], plots: RotationPlot[]): Report {
+  const widths = [14.43, ...years.flatMap(() => [14.0, 27.0])];
+  const nC = widths.length, last = nC - 1;
+  const rows: Row[] = [], merges: Report["merges"] = [];
+  const empty = (): Cell[] => widths.map(() => blank());
+  const t1 = empty(); t1[0] = { v: `PLAN QARKULLIMI ${years[0]}- ${years[years.length - 1]}`, fontName: "Calibri", size: 26, bold: true, fill: "FCD5B5", sides: "lrtb", align: "c", valign: "m" };
+  rows.push({ height: 21, cells: t1 }, { height: 21, cells: empty() }); merges.push([0, 0, 1, 6]);
+  rows.push({ height: 8, cells: empty() });
+  for (const p of plots) {
+    const r0 = rows.length;
+    const title = empty();
+    title[0] = { v: p.title, bold: true, color: "4F6128", sides: "lrtb", valign: "m", wrap: true };
+    for (let c = 1; c <= last; c++) title[c] = blank(c === last ? "rtb" : "tb");
+    rows.push({ height: 22, cells: title }); merges.push([r0, 0, r0, last]);
+    const head = empty();
+    head[0] = { v: p.totalM2 ? `SIP TOTALE ${p.totalM2}m2` : "", fill: "E5DFEC", sides: "lrtb", align: "c", valign: "m", wrap: true };
+    years.forEach((y, i) => { head[1 + 2 * i] = { v: y, size: 14, bold: true, fill: "D9EAD3", sides: "lrtb", align: "c", valign: "m" }; head[2 + 2 * i] = blank("rtb"); });
+    rows.push({ height: 18.75, header: false, cells: head });
+    merges.push(...years.map((_, i) => [r0 + 1, 1 + 2 * i, r0 + 1, 2 + 2 * i] as [number, number, number, number]));
+    p.subs.forEach((s) => {
+      const row = empty(); row[0] = blank("lr");
+      years.forEach((_, i) => {
+        row[1 + 2 * i] = { v: s.label, sides: "lrtb", align: "c", valign: "m", wrap: true };
+        row[2 + 2 * i] = { v: s.byYear[i] ?? "", sides: "lrtb", align: "c", valign: "m", wrap: true };
+      });
+      rows.push({ height: 32, cells: row });
+    });
+    rows.push({ height: 15, cells: empty() });
+  }
+  return { name: "PLAN_QARKULLIMI", sheet: "Plan Qarkullim Biobes", orientation: "landscape", paper: "A3", scalePct: 50, widths, rows, merges };
+}
+
+export interface FedexRow { date: string; ref: string; client: string; lek: number | null; currency: string; eur: number | null; note: string }
+
+/** «FATURA FEDEX» — njësoj si fleta e protokollit të mostrave. */
+export function fedexReplica(list: FedexRow[]): Report {
+  const widths = [13, 30, 28, 22, 10, 22, 80];
+  const heads = ["DATA", "NR FATURES/ NR REFERENCES", "KLIENTI", "SHUMA FATURES NE LEK", "VALUTA", "SHUMA E FATURES NE EUR", ""];
+  const rows: Row[] = [{ height: 30, header: true, cells: heads.map((h) => ({ v: h || null, bold: true, sides: "lrtb", align: "c" as const, valign: "m" as const, wrap: true })) }];
+  for (const d of list) rows.push({ height: 30, cells: [
+    { v: d.date, sides: "lrtb", valign: "m" }, { v: d.ref, sides: "lrtb", valign: "m" }, { v: d.client, sides: "lrtb", valign: "m" },
+    { v: d.lek, sides: "lrtb", valign: "m" }, { v: d.currency, sides: "lrtb", valign: "m" }, { v: d.eur, sides: "lrtb", valign: "m" },
+    { v: d.note, sides: "lrtb", valign: "m", wrap: true },
+  ] });
+  return { name: "FATURA_FEDEX", sheet: "FATURA FEDEX", orientation: "landscape", widths, rows, merges: [] };
+}

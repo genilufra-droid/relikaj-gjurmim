@@ -300,6 +300,12 @@ export default function Reports({ cid }) {
         busyP={busy === "pmp"} busyX={busy === "pmx"}
       />
       <ReportRow
+        title="Fatura FedEx (Excel)"
+        text="Data, referenca, klienti dhe shuma e faturës — si në Excel"
+        onP={both("fx", { type: "shipments", carrier: "FedEx" }).p} onX={both("fx", { type: "shipments", carrier: "FedEx" }).x}
+        busyP={busy === "fxp"} busyX={busy === "fxx"}
+      />
+      <ReportRow
         title="Lista e mbledhësve"
         text="Fermerët, zonat, familjet dhe dokumentet"
         onP={both("g", { type: "growers" }).p} onX={both("g", { type: "growers" }).x}
