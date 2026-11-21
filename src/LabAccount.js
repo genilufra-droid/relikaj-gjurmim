@@ -6,7 +6,7 @@ import { s, C, Btn, Field, Card, ErrorBox, SectionTitle, fmt, num, today, dFull 
 
 export default function LabAccount({ cid, account, onAccount }) {
   const [rows, setRows] = useState([]), [err, setErr] = useState(""), [busy, setBusy] = useState(false);
-  const [f, setF] = useState({ date: today(), ref: "", description: "", debit: "", credit: "" });
+  const [f, setF] = useState({ date: today(), ref: "", description: "", debit: "", credit: "", note: "" });
   const set = (k) => (v) => setF((o) => ({ ...o, [k]: v }));
   const load = useCallback(async () => {
     const { data, error } = await sb.from("lab_entries").select("id,date,ref,description,debit,credit,account")
@@ -20,10 +20,10 @@ export default function LabAccount({ cid, account, onAccount }) {
     if (!f.description.trim()) return setErr("Shkruani përshkrimin");
     if (!debit && !credit) return setErr("Shkruani debi ose kredi");
     setBusy(true); setErr("");
-    const { error } = await sb.from("lab_entries").insert({ company_id: cid, account: (account || "GBA").trim(), date: f.date, ref: f.ref.trim(), description: f.description.trim(), debit, credit });
+    const { error } = await sb.from("lab_entries").insert({ company_id: cid, account: (account || "GBA").trim(), date: f.date, ref: f.ref.trim(), description: f.description.trim(), debit, credit, note: f.note.trim() });
     setBusy(false);
     if (error) return setErr("Nuk u ruajt: " + error.message);
-    setF({ date: today(), ref: "", description: "", debit: "", credit: "" }); load();
+    setF({ date: today(), ref: "", description: "", debit: "", credit: "", note: "" }); load();
   };
   const D = rows.reduce((a, r) => a + Number(r.debit || 0), 0), K = rows.reduce((a, r) => a + Number(r.credit || 0), 0);
 
@@ -49,6 +49,7 @@ export default function LabAccount({ cid, account, onAccount }) {
         <View style={{ flex: 1 }}><Field label="Debi (€) — parapagim" value={f.debit} onChangeText={set("debit")} keyboardType="decimal-pad" /></View>
         <View style={{ flex: 1 }}><Field label="Kredi (€) — shërbim" value={f.credit} onChangeText={set("credit")} keyboardType="decimal-pad" /></View>
       </View>
+      <Field label="Shënim në fund të kartelës (opsional)" value={f.note} onChangeText={set("note")} />
       {!!err && <ErrorBox message={err} />}
       <Btn title="Ruaj hyrjen" icon="checkmark-circle-outline" onPress={save} busy={busy} />
     </View>

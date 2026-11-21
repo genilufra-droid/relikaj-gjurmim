@@ -294,26 +294,30 @@ export async function makeReport(sb: Sb, r: Req): Promise<Report> {
     const [co] = await q(sb.from("companies").select("name").eq("id", cid));
     if (!co) throw new ReportError("Kompania nuk u gjet", 404);
     const cults = await q(sb.from("cultivations").select("plot_id,product_id,expected_yield_kg,sowing_date,expected_harvest,plots(name,code),products(name)").eq("company_id", cid).order("plot_id"));
-    const buys = (await q(sb.from("purchases").select("date,lot_code,plot_id,product_id,qty_fresh,qty_dry").eq("company_id", cid).order("date")))
-      .filter((x: any) => String(x.date ?? "").startsWith(String(year)));
-    const lots = (await q(sb.from("lot_summary").select("lot_code,exported,stock,export_to,export_date").eq("company_id", cid).eq("year", year)));
-    const lotBy = new Map<string, any>(lots.map((l: any) => [l.lot_code, l]));
-    const cy = cults.filter((c: any) => [c.sowing_date, c.expected_harvest].some((d) => String(d ?? "").startsWith(String(year))) || buys.some((b: any) => b.plot_id === c.plot_id && b.product_id === c.product_id));
-    const seen = new Set<string>();
-    const rows = cy.map((c: any) => {
-      const mine = buys.filter((b: any) => b.plot_id === c.plot_id && b.product_id === c.product_id);
-      const codes = [...new Set(mine.map((b: any) => b.lot_code))];
-      seen.add(`${c.plot_id}/${c.product_id}`);
-      const exp = codes.reduce((a: number, k: string) => a + Number(lotBy.get(k)?.exported ?? 0), 0);
-      const stock = codes.reduce((a: number, k: string) => a + Number(lotBy.get(k)?.stock ?? 0), 0);
-      const last = codes.map((k: string) => lotBy.get(k)).filter((l: any) => l?.export_to).sort((a: any, b: any) => String(b.export_date).localeCompare(String(a.export_date)))[0];
-      return [c.plots?.code || c.plots?.name || "", c.products?.name ?? "", Number(c.expected_yield_kg ?? 0) || null,
-        mine.length ? dShort(String(mine[0].date)) : "", mine.length ? dShort(String(mine[mine.length - 1].date)) : "",
-        mine.reduce((a: number, b: any) => a + Number(b.qty_fresh ?? 0), 0), mine.reduce((a: number, b: any) => a + Number(b.qty_dry ?? 0), 0),
-        exp, stock, last ? `${last.export_to} ${last.export_date ? dShort(last.export_date) : ""}`.trim() : ""];
-    });
-    return kultivimeReplica([{ year, rows: rows.map((x: any[]) => [x[0], x[1], x[2], x[3], x[4], x[5] || null, x[6] || null, x[7] || null, x[8] || null, x[9] || null, null]),
-      inspectedAt: dShort(new Date().toISOString().slice(0, 10)) }]);
+    const allBuys = await q(sb.from("purchases").select("date,lot_code,plot_id,product_id,qty_fresh,qty_dry").eq("company_id", cid).order("date"));
+    const blockFor = async (yr: number) => {
+      const buys = allBuys.filter((x: any) => String(x.date ?? "").startsWith(String(yr)));
+      const lots = await q(sb.from("lot_summary").select("lot_code,exported,stock,export_to,export_date").eq("company_id", cid).eq("year", yr));
+      const lotBy = new Map<string, any>(lots.map((l: any) => [l.lot_code, l]));
+      const cy = cults.filter((c: any) => [c.sowing_date, c.expected_harvest].some((d) => String(d ?? "").startsWith(String(yr))) || buys.some((b: any) => b.plot_id === c.plot_id && b.product_id === c.product_id));
+      const rows = cy.map((c: any) => {
+        const mine = buys.filter((b: any) => b.plot_id === c.plot_id && b.product_id === c.product_id);
+        const codes = [...new Set(mine.map((b: any) => b.lot_code))];
+        const exp = codes.reduce((a: number, k: string) => a + Number(lotBy.get(k)?.exported ?? 0), 0);
+        const stock = codes.reduce((a: number, k: string) => a + Number(lotBy.get(k)?.stock ?? 0), 0);
+        const last = codes.map((k: string) => lotBy.get(k)).filter((l: any) => l?.export_to).sort((a: any, b: any) => String(b.export_date).localeCompare(String(a.export_date)))[0];
+        return [c.plots?.code || c.plots?.name || "", c.products?.name ?? "", Number(c.expected_yield_kg ?? 0) || null,
+          mine.length ? dShort(String(mine[0].date)) : "", mine.length ? dShort(String(mine[mine.length - 1].date)) : "",
+          mine.reduce((a: number, b: any) => a + Number(b.qty_fresh ?? 0), 0) || null, mine.reduce((a: number, b: any) => a + Number(b.qty_dry ?? 0), 0) || null,
+          exp || null, stock || null, last ? `${last.export_to} ${last.export_date ? dShort(last.export_date) : ""}`.trim() : null, mine.length ? "OK" : null];
+      });
+      return { year: yr, rows, inspectedAt: yr === year ? dShort(new Date().toISOString().slice(0, 10)) : undefined };
+    };
+    // Si në Excel: blloku i vitit aktual dhe poshtë ai i vitit të kaluar (nëse ka të dhëna)
+    const blocks = [await blockFor(year)];
+    const prev = await blockFor(year - 1);
+    if (prev.rows.length) blocks.push(prev);
+    return kultivimeReplica(blocks);
   }
   if (r.type === "rotation") {
     // Si «PLAN QARKULLIMI»: çdo parcelë dhe çfarë kultivohet në çdo vit (djerr kur nuk ka kultivim)
@@ -321,6 +325,8 @@ export async function makeReport(sb: Sb, r: Req): Promise<Report> {
     if (!co) throw new ReportError("Kompania nuk u gjet", 404);
     const plots = await q(sb.from("plots").select("id,name,code,area_ha,ownership,status").eq("company_id", cid).order("code"));
     const cults = await q(sb.from("cultivations").select("plot_id,expected_yield_kg,sowing_date,expected_harvest,stage,products(name)").eq("company_id", cid));
+    const leaseRows = await q(sb.from("leases").select("plot_id,owner_name").eq("company_id", cid));
+    const ownerOf = (id: number) => leaseRows.find((l: any) => l.plot_id === id && l.owner_name)?.owner_name ?? "";
     const years = Array.from({ length: 7 }, (_, i) => year - 4 + i);   // si në Excel: 7 vite
     const yearOf = (c: any) => Number(String(c.sowing_date || c.expected_harvest || "").slice(0, 4)) || null;
     const rows = plots.map((p: any) => {
@@ -336,7 +342,7 @@ export async function makeReport(sb: Sb, r: Req): Promise<Report> {
     for (const p of plots) { const k = parent(p); groups.set(k, [...(groups.get(k) ?? []), p]); }
     const out = [...groups.entries()].map(([k, ps]) => {
       const m2 = (p: any) => Math.round(Number(p.area_ha ?? 0) * 10000);
-      return { code: k, title: `PARCELA: ${k}   ${ps.length === 1 && ps[0].name && ps[0].name !== ps[0].code ? `EMRI: ${ps[0].name}` : ""}`.trim(), totalM2: ps.reduce((a: number, p: any) => a + m2(p), 0),
+      return { code: k, title: `PARCELA: ${k}   ${ps.map((p: any) => ownerOf(p.id)).find(Boolean) ? `PRONARI: ${ps.map((p: any) => ownerOf(p.id)).find(Boolean)}   ` : ""}${ps.length === 1 && ps[0].name && ps[0].name !== ps[0].code ? `EMRI: ${ps[0].name}` : ""}`.trim(), totalM2: ps.reduce((a: number, p: any) => a + m2(p), 0),
         subs: ps.map((p: any) => ({ label: `${p.code || p.name}  ${m2(p)}m2`, byYear: years.map((y) => {
           const mine = cults.filter((c: any) => c.plot_id === p.id && yearOf(c) === y);
           if (mine.length) return mine.map((c: any) => `${c.products?.name ?? "?"}${Number(c.expected_yield_kg) ? ` ${Number(c.expected_yield_kg)} kg` : ""}`).join(", ");
@@ -371,10 +377,11 @@ export async function makeReport(sb: Sb, r: Req): Promise<Report> {
   if (r.type === "lab_ledger") {
     // Si «ANALIZAT GBA»: kartela e llogarisë me laboratorin — debi (parapagime), kredi (shërbime), gjendja
     const account = (r.account || "GBA").trim();
-    const all = await q(sb.from("lab_entries").select("date,ref,description,debit,credit,account").eq("company_id", cid).order("date").order("id"));
+    const all = await q(sb.from("lab_entries").select("date,ref,description,debit,credit,account,note").eq("company_id", cid).order("date").order("id"));
     const rows = all.filter((x: any) => String(x.account).toLowerCase() === account.toLowerCase() && inRange(x.date, r.from, r.to));
     return labLedgerReplica(account, rows.map((x: any) => ({ date: dDots2(x.date), ref: x.ref ?? "", description: x.description ?? "",
-      debit: Number(x.debit) || null, credit: Number(x.credit) || null })));
+      debit: Number(x.debit) || null, credit: Number(x.credit) || null })),
+      rows.map((x: any) => x.note).filter(Boolean).pop() || undefined);
   }
   throw new ReportError("Lloji i raportit nuk njihet");
 }
