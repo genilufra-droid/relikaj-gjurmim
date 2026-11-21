@@ -7,6 +7,7 @@ import * as Sharing from "expo-sharing";
 import * as DocumentPicker from "expo-document-picker";
 import { sb } from "./supabase";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config";
+import ResetData from "./ResetData";
 import { s, C, Btn, Card, Chip, ErrorBox, InfoBox, SectionTitle, fmt } from "./ui";
 
 export const TABLE_LABEL = {
@@ -37,7 +38,7 @@ const stamp = () => {
 
 const sizeLabel = (bytes) => (bytes > 1048576 ? `${(bytes / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`);
 
-export default function Backup({ cid }) {
+export default function Backup({ cid, role }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [msg, setMsg] = useState("");
@@ -169,6 +170,7 @@ export default function Backup({ cid }) {
 
       {!!err && <ErrorBox message={err} />}
       {!!msg && <InfoBox icon="checkmark-circle">{msg}</InfoBox>}
+      <ResetData cid={cid} role={role} />
     </ScrollView>
   );
 }

@@ -218,7 +218,7 @@ export default function App() {
   else if (tab === "printo") body = <PrintCenter key={cid} cid={cid} role={role} />;
   else if (tab === "mostra") body = <Samples key={cid} cid={cid} role={role} onNew={() => setForm("mostra")} />;
   else if (tab === "importo") body = <Import key={cid} cid={cid} preset={importEnt} onGo={go} />;
-  else if (tab === "backup") body = <Backup key={cid} cid={cid} />;
+  else if (tab === "backup") body = <Backup key={cid} cid={cid} role={role} />;
   else if (tab === "asistenti") body = <Assistant key={cid} cid={cid} onGo={go} />;
   else if (tab === "fillimi") body = <Start key={cid} cid={cid} role={role} onGo={go} onForm={(k) => setForm(k)} onImport={goImport} />;
   else if (tab === "raporte") body = <Reports cid={cid} />;
