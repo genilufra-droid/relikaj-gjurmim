@@ -96,7 +96,7 @@ export default function Purchases({ cid, role, onNew, onPrint }) {
           <SearchBar value={q} onChange={setQ} placeholder="Lot, fermer, produkt ose grumbullues…" />
           {!!err && <ErrorBox message={err} onRetry={load} />}
           {canWrite && <Btn title="+ Blerje e re" icon="add" onPress={onNew} />}
-          {!!onPrint && <Btn title="Fatura dhe fletë hyrje" icon="print-outline" alt onPress={onPrint} />}
+          {!!onPrint && <Btn title="Drafte dhe fletë hyrje" icon="print-outline" alt onPress={onPrint} />}
           {loading && rows.length === 0 && <Loading />}
         </View>
       }

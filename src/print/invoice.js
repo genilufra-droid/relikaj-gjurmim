@@ -1,27 +1,28 @@
-// Faturë tatimore (shitje ose blerje) sipas elementeve të detyrueshme të Ligjit Nr. 87/2019
-// «Për faturën dhe sistemin e monitorimit të qarkullimit» dhe Udhëzimit Nr. 16/2020.
-// Elementet: kreu i faturës, shitësi, blerësi, numri, datat, sasia/përshkrimi/çmimi,
-// vlera, TVSH-ja, vlera totale, mënyra dhe afati i pagesës, NSLF, NIVF, kodi QR, kodi i operatorit.
+// Draft i brendshëm i blerjes/shitjes, jo faturë e fiskalizuar.
+// Aplikacioni nuk është i integruar me CIS dhe nuk gjeneron ose verifikon kode fiskale.
 import { rgb } from "pdf-lib";
-import { BRAND, INK, LINE, MARGIN, money, newDocument, qty, dAlb, safe } from "./layout";
-import { drawQr } from "./qr";
+import { BRAND, INK, MARGIN, money, newDocument, qty, dAlb, safe } from "./layout";
 
 const WHITE = rgb(1, 1, 1);
 const SOFTISH = rgb(0.96, 0.975, 0.95);
-const SUBISH = rgb(0.45, 0.5, 0.46);
 const PALE = rgb(0.88, 0.94, 0.84);
+const WARNING_BG = rgb(1, 0.95, 0.86);
+const WARNING_INK = rgb(0.52, 0.24, 0.03);
 
 const TITLES = {
-  sale: "FATURË TATIMORE",
-  sale_simple: "FATURË-TH",
-  purchase: "FATURË TATIMORE — BLERJE",
+  sale: "DRAFT SHITJE",
+  sale_simple: "DRAFT SHITJE",
+  purchase: "DRAFT BLERJE",
 };
+const STATUS = "DRAFT — JO E FISKALIZUAR";
+const STATUS_DETAIL = "Dokument i brendshëm. Nuk është faturë e fiskalizuar.";
+const STATUS_ACTION = "Për faturë fiskale, përdorni sistemin e fiskalizimit.";
 
 export async function buildInvoicePdf(doc) {
   const {
     company = {}, kind = "sale", number, issueDate, supplyDate, dueDate,
     seller = {}, buyer = {}, items = [], payment = "", currency = "LEK",
-    note = "", fiscal = {}, series = "",
+    note = "", series = "",
   } = doc;
 
   const vatRate = Number(doc.vatRate ?? company.vat_rate ?? 20);
@@ -36,7 +37,18 @@ export async function buildInvoicePdf(doc) {
   const sumGross = sumNet + sumVat;
 
   const d = await newDocument();
-  d.footer = `${company.name || "BioBes"} · NIPT ${company.nipt || "—"} · ${TITLES[kind] || "FATURË"}`;
+  // Tabela dhe shënimi mund të krijojnë faqe shtesë: secila merr paralajmërimin.
+  d.footer = STATUS;
+  const addPage = d.addPage;
+  d.addPage = () => {
+    const page = addPage();
+    if (d.pageNo > 1) {
+      d.box(MARGIN, d.h - 68, d.w - 2 * MARGIN, 28, WARNING_BG);
+      page.drawText(safe(STATUS), { x: MARGIN + 10, y: d.h - 59, size: 11, font: d.bold, color: WARNING_INK });
+      d.y = d.h - 80;
+    }
+    return page;
+  };
   d.addPage();
   const right = d.w - MARGIN;
 
@@ -49,8 +61,8 @@ export async function buildInvoicePdf(doc) {
   const contact = [company.phone, company.email].filter(Boolean).join(" · ");
   if (contact) d.page.drawText(safe(contact), { x: MARGIN, y: d.h - 82, size: 8, font: d.reg, color: PALE });
 
-  d.page.drawText(safe(TITLES[kind] || "FATURË"), { x: right - d.bold.widthOfTextAtSize(safe(TITLES[kind] || "FATURË"), 13), y: d.h - 42, size: 13, font: d.bold, color: WHITE });
-  const nrText = `Nr. ${number || "—"}`;
+  d.page.drawText(safe(TITLES[kind] || "DRAFT"), { x: right - d.bold.widthOfTextAtSize(safe(TITLES[kind] || "DRAFT"), 13), y: d.h - 42, size: 13, font: d.bold, color: WHITE });
+  const nrText = `Referencë e brendshme: ${number || "—"}`;
   d.page.drawText(safe(nrText), { x: right - d.bold.widthOfTextAtSize(safe(nrText), 10), y: d.h - 58, size: 10, font: d.bold, color: WHITE });
   d.page.drawText(safe(`Data: ${dAlb(issueDate)}`), { x: right - d.reg.widthOfTextAtSize(safe(`Data: ${dAlb(issueDate)}`), 8.5), y: d.h - 71, size: 8.5, font: d.reg, color: PALE });
   if (supplyDate && supplyDate !== issueDate) {
@@ -58,8 +70,14 @@ export async function buildInvoicePdf(doc) {
     d.page.drawText(safe(t), { x: right - d.reg.widthOfTextAtSize(safe(t), 8.5), y: d.h - 82, size: 8.5, font: d.reg, color: PALE });
   }
 
+  // ---------------------------------------------------------------- statusi i dokumentit
+  d.box(MARGIN, d.h - 151, right - MARGIN, 44, WARNING_BG);
+  d.page.drawText(safe(STATUS), { x: MARGIN + 10, y: d.h - 122, size: 11, font: d.bold, color: WARNING_INK });
+  d.page.drawText(safe(STATUS_DETAIL), { x: MARGIN + 10, y: d.h - 136, size: 8.5, font: d.reg, color: WARNING_INK });
+  d.page.drawText(safe(STATUS_ACTION), { x: MARGIN + 10, y: d.h - 147, size: 8.5, font: d.reg, color: WARNING_INK });
+
   // ---------------------------------------------------------------- palët
-  d.y = d.h - 110;
+  d.y = d.h - 165;
   const half = (d.w - 2 * MARGIN - 12) / 2;
   d.partyBlock({
     title: kind === "purchase" ? "SHITËSI (furnitori)" : "SHITËSI",
@@ -136,6 +154,7 @@ export async function buildInvoicePdf(doc) {
     ...(dueDate ? [["Afati i pagesës", dAlb(dueDate)]] : []),
     ...(company.bank_account ? [["Llogaria bankare", company.bank_account]] : []),
   ];
+  d.need(payLines.length * 13 + 5);
   payLines.forEach(([k, v]) => {
     d.page.drawText(safe(`${k}:`), { x: MARGIN, y: d.y, size: 8.6, font: d.bold, color: INK });
     d.page.drawText(safe(v), { x: MARGIN + 108, y: d.y, size: 8.6, font: d.reg, color: INK });
@@ -143,35 +162,17 @@ export async function buildInvoicePdf(doc) {
   });
 
   if (note) {
+    const lines = d.wrap(note, d.reg, 8.6, right - MARGIN);
     d.y -= 6;
+    d.need(25);
     d.page.drawText(safe("Shënim:"), { x: MARGIN, y: d.y, size: 8.6, font: d.bold, color: INK });
     d.y -= 12;
-    const used = d.text(note, { x: MARGIN, size: 8.6, maxWidth: right - MARGIN });
-    d.y -= used + 4;
+    lines.forEach((line) => {
+      d.need(12);
+      d.page.drawText(safe(line), { x: MARGIN, y: d.y, size: 8.6, font: d.reg, color: INK });
+      d.y -= 11.6;
+    });
   }
-
-  // ---------------------------------------------------------------- blloku fiskal
-  d.need(96);
-  d.y = Math.min(d.y, MARGIN + 96);
-  d.hr(d.y + 6, LINE, 0.6);
-  d.y -= 6;
-  d.page.drawText(safe("TË DHËNAT E FISKALIZIMIT"), { x: MARGIN, y: d.y, size: 7.2, font: d.bold, color: SUBISH });
-  d.y -= 12;
-  const nslf = fiscal.nslf || "—";
-  const nivf = fiscal.nivf || "";
-  d.page.drawText(safe(`NSLF: ${nslf}`), { x: MARGIN, y: d.y, size: 8.4, font: d.reg, color: INK });
-  d.page.drawText(safe(`NIVF: ${nivf || "—  (fatura nuk është fiskalizuar)"}`), { x: MARGIN, y: d.y - 12, size: 8.4, font: d.reg, color: INK });
-  d.page.drawText(safe(`Kodi i operatorit: ${fiscal.operator || company.operator_code || "—"}   ·   Vendi: AL`), { x: MARGIN, y: d.y - 24, size: 8.4, font: d.reg, color: INK });
-
-  if (nivf) {
-    drawQr(d.page, fiscal.qr || `NIVF:${nivf}|NSLF:${nslf}|NIPT:${company.nipt || ""}|TOTAL:${sumGross.toFixed(2)}|DATE:${issueDate || ""}`, { x: right - 74, y: d.y + 6, size: 68, color: INK });
-  } else {
-    d.page.drawText(safe("Pa NIVF, fatura printohet sipas rregullit"), { x: right - 200, y: d.y + 10, size: 6.8, font: d.reg, color: SUBISH });
-    d.page.drawText(safe("të punës jashtë linje dhe transmetohet për"), { x: right - 200, y: d.y + 3, size: 6.8, font: d.reg, color: SUBISH });
-    d.page.drawText(safe("fiskalizim brenda 48 orëve."), { x: right - 200, y: d.y - 4, size: 6.8, font: d.reg, color: SUBISH });
-  }
-
-  d.page.drawText(safe('Lëshuar në përputhje me Ligjin Nr. 87/2019 «Për faturën dhe sistemin e monitorimit të qarkullimit».'), { x: MARGIN, y: 34 + 8, size: 6.6, font: d.reg, color: SUBISH });
 
   return d.pdf.save();
 }

@@ -1,5 +1,5 @@
-// Printimi i dokumenteve: faturë blerje (nga blerjet), faturë shitje dhe fletë dalje (nga daljet),
-// fletë hyrje (nga blerjet). Të dhënat fiskale të kompanisë plotësohen një herë dhe përdoren kudo.
+// Printimi i drafteve të brendshme për blerje/shitje dhe fletëve të magazinës.
+// Draftet nuk fiskalizohen nga aplikacioni.
 import React, { useCallback, useEffect, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -66,9 +66,9 @@ export default function PrintCenter({ cid, role }) {
   };
 
   const docMeta = async (kind, id, date) => {
-    const { data: number } = await sb.rpc("doc_number", { p_kind: kind, p_id: id, p_date: date });
-    const { data: nslf } = await sb.rpc("doc_nslf", { p_nipt: company?.nipt || "", p_kind: kind, p_number: number || "" });
-    return { number: number || "", nslf: nslf || "" };
+    const { data: number, error } = await sb.rpc("doc_number", { p_kind: kind, p_id: id, p_date: date });
+    if (error) throw error;
+    return { number: number || "" };
   };
 
   const companyBlock = () => ({
@@ -107,7 +107,6 @@ export default function PrintCenter({ cid, role }) {
       buyer: { name: company?.name || "BioBes", nipt: company?.nipt || "", address: company?.address || "", city: company?.city || "" },
       items: [{ description: `${p.products?.name || "Produkt"}${p.lot_code ? ` · Loti ${p.lot_code}` : ""}`, unit: "kg", qty, price: Number(p.price || 0) }],
       payment: "Para në dorë", vatRate: 0, vatPayer: false,
-      fiscal: { nslf: meta.nslf, operator: company?.operator_code || "" },
       note: p.note || "",
     });
   };
@@ -121,7 +120,7 @@ export default function PrintCenter({ cid, role }) {
         name: `${p.farmers?.first_name || ""} ${p.farmers?.last_name || ""}`.trim() || "Fermer",
         nipt: p.farmers?.id_number || "", address: p.farmers?.address || "", phone: p.farmers?.phone || "",
       },
-      reference: (await docMeta("fature_blerje", p.id, p.date)).number,
+      reference: `Draft blerje ${(await docMeta("fature_blerje", p.id, p.date)).number}`,
       items: [{
         code: p.products?.code || "", name: `${p.products?.name || "Produkt"}${p.lot_code ? ` (loti ${p.lot_code})` : ""}`,
         unit: "kg", qty: Number(p.qty_dry || 0) || Number(p.qty_fresh || 0), price: Number(p.price || 0),
@@ -133,7 +132,7 @@ export default function PrintCenter({ cid, role }) {
   // ------------------------------------------------------------------ faturë shitje
   const saleInvoice = (m) => async () => {
     const unitPrice = num(price);
-    if (!(unitPrice > 0)) throw new Error("Shkruani çmimin e shitjes për të nxjerrë faturën.");
+    if (!(unitPrice > 0)) throw new Error("Shkruani çmimin e shitjes për të krijuar draftin.");
     const meta = await docMeta("fature_shitje", m.id, m.date);
     return buildInvoicePdf({
       company: companyBlock(), kind: "sale", number: meta.number, issueDate: today(), supplyDate: m.date,
@@ -147,7 +146,6 @@ export default function PrintCenter({ cid, role }) {
         unit: "kg", qty: Number(m.qty_out || 0), price: unitPrice,
       }],
       payment: (PAYMENTS.find(([k]) => k === payment) || [, "Transfertë bankare"])[1],
-      fiscal: { nslf: meta.nslf, operator: company?.operator_code || "" },
     });
   };
 
@@ -171,7 +169,10 @@ export default function PrintCenter({ cid, role }) {
   return (
     <ScrollView style={s.screen} contentContainerStyle={s.pad} keyboardShouldPersistTaps="handled">
       <Text style={s.h1}>Printo</Text>
-      <Text style={[s.sub, { marginTop: 4 }]}>Fatura dhe fletë magazine sipas modelit të fiskalizimit shqiptar.</Text>
+      <Text style={[s.sub, { marginTop: 4 }]}>Drafte të brendshme për blerje dhe shitje, dhe fletë magazine.</Text>
+      <InfoBox icon="warning-outline" tone="warn">
+        Draftet e blerjes dhe shitjes nuk janë fatura të fiskalizuara. Aplikacioni nuk i dërgon për fiskalizim. Për faturë fiskale përdorni sistemin përkatës.
+      </InfoBox>
 
       {/* ---------------------------------------------------------------- të dhënat fiskale */}
       <SectionTitle right={!editFiscal ? <TouchableOpacity onPress={() => setEditFiscal(true)}><Text style={{ color: C.brand, fontWeight: "700", fontSize: 13 }}>Ndrysho</Text></TouchableOpacity> : null}>
@@ -215,7 +216,7 @@ export default function PrintCenter({ cid, role }) {
 
       {/* ---------------------------------------------------------------- blerjet */}
       {!loading && tab === "blerje" && (purchases.length === 0 ? (
-        <Empty icon="basket-outline" title="Pa blerje" text="Regjistroni një blerje dhe faturat dalin prej saj." />
+        <Empty icon="basket-outline" title="Pa blerje" text="Regjistroni një blerje për të krijuar draftin e saj." />
       ) : purchases.map((p) => (
         <Card key={p.id}>
           <View style={s.listRow}>
@@ -231,16 +232,16 @@ export default function PrintCenter({ cid, role }) {
             <Text style={{ fontWeight: "800", color: C.brand }}>{money(p.amount)}</Text>
           </View>
           <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
-            <SmallBtn label="Fatura blerje" icon="document-text-outline" onPress={() => run(purchaseInvoice(p), `Fature-blerje-${p.id}.pdf`)} busy={busy} />
+            <SmallBtn label="Draft blerje" icon="document-text-outline" onPress={() => run(purchaseInvoice(p), `Draft-blerje-${p.id}.pdf`)} busy={busy} />
             <SmallBtn label="Fletë hyrje" icon="log-in-outline" onPress={() => run(purchaseStockIn(p), `Flete-hyrje-${p.id}.pdf`)} busy={busy} />
-            <SmallBtn label="Nda" icon="share-outline" alt onPress={() => runShare(purchaseInvoice(p), `Fature-blerje-${p.id}.pdf`)} busy={busy} />
+            <SmallBtn label="Nda" icon="share-outline" alt onPress={() => runShare(purchaseInvoice(p), `Draft-blerje-${p.id}.pdf`)} busy={busy} />
           </View>
         </Card>
       )))}
 
       {/* ---------------------------------------------------------------- daljet */}
       {!loading && tab === "dalje" && (moves.length === 0 ? (
-        <Empty icon="cube-outline" title="Pa dalje" text="Daljet regjistrohen te Magazina; faturat e shitjes dalin prej tyre." />
+        <Empty icon="cube-outline" title="Pa dalje" text="Daljet regjistrohen te Magazina; draftet e shitjes dalin prej tyre." />
       ) : moves.map((m) => (
         <Card key={m.id}>
           <View style={s.listRow}>
@@ -260,24 +261,20 @@ export default function PrintCenter({ cid, role }) {
               <Field label="Çmimi i shitjes (lekë/kg)" value={price} onChangeText={setPrice} keyboardType="decimal-pad" placeholder="0,00" />
               <Segmented options={PAYMENTS} value={payment} onChange={setPayment} />
               <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
-                <SmallBtn label="Fatura shitje" icon="document-text-outline" onPress={() => run(saleInvoice(m), `Fature-shitje-${m.id}.pdf`)} busy={busy} />
+                <SmallBtn label="Draft shitje" icon="document-text-outline" onPress={() => run(saleInvoice(m), `Draft-shitje-${m.id}.pdf`)} busy={busy} />
                 <SmallBtn label="Fletë dalje" icon="log-out-outline" onPress={() => run(moveStockOut(m), `Flete-dalje-${m.id}.pdf`)} busy={busy} />
-                <SmallBtn label="Nda" icon="share-outline" alt onPress={() => runShare(saleInvoice(m), `Fature-shitje-${m.id}.pdf`)} busy={busy} />
+                <SmallBtn label="Nda" icon="share-outline" alt onPress={() => runShare(saleInvoice(m), `Draft-shitje-${m.id}.pdf`)} busy={busy} />
               </View>
               <Btn title="Mbyll" alt onPress={() => { setSel(null); setPrice(""); }} />
             </View>
           ) : (
             <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
-              <SmallBtn label="Fatura shitje" icon="document-text-outline" onPress={() => { setSel(m); setPrice(""); }} />
+              <SmallBtn label="Draft shitje" icon="document-text-outline" onPress={() => { setSel(m); setPrice(""); }} />
               <SmallBtn label="Fletë dalje" icon="log-out-outline" onPress={() => run(moveStockOut(m), `Flete-dalje-${m.id}.pdf`)} busy={busy} />
             </View>
           )}
         </Card>
       )))}
-
-      <InfoBox icon="information-circle">
-        Fatura printohet me NSLF; NIVF-i dhe kodi QR shtohen vetëm pasi fatura kalon në sistemin e fiskalizimit (CIS). Pa NIVF, ligji lejon printimin dhe kërkon transmetimin brenda 48 orëve.
-      </InfoBox>
     </ScrollView>
   );
 }

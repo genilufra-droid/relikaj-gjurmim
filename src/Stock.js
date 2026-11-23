@@ -62,7 +62,7 @@ export default function Stock({ cid, role, onNew, onPrint }) {
     <FlatList
       style={s.screen} contentContainerStyle={s.pad} data={rows} keyExtractor={(r) => r.lot_code} onRefresh={load} refreshing={false}
       ListHeaderComponent={<View><Text style={s.h1}>Magazina sipas lotit</Text>{(role === "admin" || role === "staf" || role === "grumbullues") && <Btn title="+ Dorëzim / eksport / gjendje fillestare" onPress={onNew} />}
-        {!!onPrint && <Btn title="Fatura dhe fletë dalje" icon="print-outline" alt onPress={onPrint} />}{!!err && <Text style={s.err}>{err}</Text>}</View>}
+        {!!onPrint && <Btn title="Drafte dhe fletë dalje" icon="print-outline" alt onPress={onPrint} />}{!!err && <Text style={s.err}>{err}</Text>}</View>}
       ListEmptyComponent={<Text style={s.mute}>Asnjë lot ende.</Text>}
       renderItem={({ item: r }) => (
         <View style={[s.card, { marginTop: 10 }]}>

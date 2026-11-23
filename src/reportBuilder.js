@@ -1,5 +1,5 @@
 // Raportet krijohen brenda telefonit (Excel/PDF), me të njëjtin kod si funksioni në server.
-// Kështu punojnë edhe pa internet pasi të dhënat janë ngarkuar.
+// Të dhënat lexohen nga Supabase me lejet e përdoruesit, prandaj nevojitet lidhje rrjeti.
 import "./polyfills";
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";

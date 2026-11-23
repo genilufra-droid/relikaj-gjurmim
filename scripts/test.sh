@@ -24,7 +24,14 @@ for f in auth_test voice_test import_test print_test; do
   node "tests/.$f.mjs"
   rm -f "tests/.$f.mjs"
 done
-"$ESB" tests/smoke/render_test.js --bundle --platform=node --format=esm --loader:.js=jsx \
-  --outfile=tests/smoke/render.out.mjs "${ALIAS[@]}" --external:react --external:react-test-renderer --log-level=error
-node tests/smoke/render.out.mjs
-rm -f tests/smoke/render.out.mjs
+"$ESB" tests/handler_test.ts --bundle --platform=node --format=esm --outfile=tests/.handler_test.mjs --log-level=error
+node tests/.handler_test.mjs
+rm -f tests/.handler_test.mjs
+node tests/package_reports_test.mjs
+node tests/workflow_release_test.mjs
+for f in render_test print_center_test; do
+  "$ESB" "tests/smoke/$f.js" --bundle --platform=node --format=esm --loader:.js=jsx \
+    --outfile="tests/smoke/.$f.mjs" "${ALIAS[@]}" --external:react --external:react-test-renderer --log-level=error
+  node "tests/smoke/.$f.mjs"
+  rm -f "tests/smoke/.$f.mjs"
+done

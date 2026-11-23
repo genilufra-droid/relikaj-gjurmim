@@ -2,6 +2,6 @@
   "imports": {
     "jszip": "npm:jszip@3.10.1",
     "pdf-lib": "npm:pdf-lib@1.17.1",
-    "@supabase/supabase-js": "npm:@supabase/supabase-js@2"
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2.119.2"
   }
 }

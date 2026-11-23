@@ -6,6 +6,7 @@
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
+    "reports:package": "node scripts/package-reports.mjs",
     "test": "bash scripts/test.sh",
     "test:ui": "bash scripts/test.sh"
   },
