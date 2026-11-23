@@ -37,7 +37,7 @@ const GROUPS = [
     items: [
       ["perpunimi", "Përpunimi", "Tharje, prerje, vaj", "cog-outline"],
       ["magazine", "Magazina", "Dorëzime dhe eksport", "cube-outline"],
-      ["printo", "Printo", "Fatura dhe fletë magazine", "print-outline"],
+      ["printo", "Printo", "Drafte dhe fletë magazine", "print-outline"],
       ["dokumente", "Dokumentet", "Kontrata, fatura, foto", "document-text-outline"],
     ],
   },

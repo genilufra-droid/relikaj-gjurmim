@@ -1,5 +1,7 @@
+import { strict as assert } from "node:assert";
+import JSZip from "jszip";
+import { PDFDocument } from "pdf-lib";
 import { generate } from "../supabase/functions/reports/handler.ts";
-import { mkdirSync, writeFileSync } from "node:fs";
 const T: Record<string, any[]> = {
   companies: [{ id: 1, name: "BioBes" }],
   products: [{ id: 1, latin: "Rubus idaeus" }],
@@ -36,10 +38,37 @@ const fake = { from(t: string) {
     then: (res: any, rej: any) => Promise.resolve({ data: rows, error: null }).then(res, rej) };
   return c;
 } };
-mkdirSync("/var/tmp/rep2", { recursive: true });
-for (const type of ["summary", "lot", "farmer", "growers", "trace", "plots", "inputs", "tasks", "zones", "purchases", "payments", "samples", "operations", "reminders", "plot", "cultivation", "rotation", "shipments", "protocol", "lab_ledger"] as const) for (const format of ["xlsx", "pdf"] as const) {
+const types = ["summary", "lot", "farmer", "growers", "trace", "plots", "inputs", "tasks", "zones", "purchases", "payments", "samples", "operations", "reminders", "plot", "cultivation", "rotation", "shipments", "protocol", "lab_ledger"] as const;
+const markers: Record<string, string> = { rotation: "K01", shipments: "4259067632", protocol: "W010F/1a-I-115-26", lab_ledger: "NR.2024RE11048" };
+let passed = 0;
+for (const type of types) for (const format of ["xlsx", "pdf"] as const) {
   const r = await generate(fake, { type, format, company_id: 1, year: 2026, lot_code: "W010F/1a-I-115-26", farmer_id: 1, plot_id: 1, from: "2026-01-01", to: "2026-12-31" });
-  writeFileSync(`/var/tmp/rep2/${r.filename}`, r.bytes);
-  console.log(type, format, r.filename, r.bytes.length);
+  assert.ok(r.filename.endsWith(`.${format}`), `${type}: prapashtesa`);
+  if (format === "pdf") {
+    assert.equal(r.mime, "application/pdf");
+    assert.equal(Buffer.from(r.bytes.slice(0, 4)).toString(), "%PDF", `${type}: nënshkrimi PDF`);
+    assert.ok((await PDFDocument.load(r.bytes)).getPageCount() > 0, `${type}: PDF e lexueshme`);
+  } else {
+    assert.equal(r.mime, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    const zip = await JSZip.loadAsync(r.bytes);
+    const sheet = zip.file("xl/worksheets/sheet1.xml");
+    assert.ok(sheet, `${type}: fleta Excel ekziston`);
+    const xml = await sheet.async("string");
+    assert.ok(xml.includes("<sheetData>"), `${type}: fleta Excel është e lexueshme`);
+    if (markers[type]) assert.ok(xml.includes(markers[type]), `${type}: të dhënat e provës në Excel`);
+  }
+  passed++;
 }
-try { await generate(fake, { type: "lot", format: "pdf", company_id: 1, lot_code: "NUK-EKZISTON" }); } catch (e: any) { console.log("gabim i pritur:", e.message, e.status); }
+for (const format of ["xlsx", "pdf"] as const) {
+  const r = await generate(fake, { type: "shipments", format, company_id: 1, carrier: "FedEx", year: 2026 });
+  if (format === "xlsx") {
+    const zip = await JSZip.loadAsync(r.bytes);
+    const xml = await zip.file("xl/worksheets/sheet1.xml")!.async("string");
+    assert.ok(xml.includes("7733115110") && !xml.includes("4259067632"), "filtri FedEx");
+  } else assert.ok((await PDFDocument.load(r.bytes)).getPageCount() > 0, "PDF FedEx");
+  passed++;
+}
+await assert.rejects(() => generate(fake, { type: "lot", format: "pdf", company_id: 1, lot_code: "NUK-EKZISTON" }), { status: 404 });
+await assert.rejects(() => generate(fake, { type: "summary", format: "xlsx", company_id: 0 }), { status: 400 });
+await assert.rejects(() => generate(fake, { type: "summary", format: "invalid" as any, company_id: 1 }), { status: 400 });
+console.log(`\n${passed} raporte PDF/Excel dhe 3 raste gabimi kaluan (të dhëna të simuluara)`);

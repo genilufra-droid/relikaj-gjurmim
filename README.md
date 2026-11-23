@@ -4,12 +4,12 @@ Aplikacion i vërtetë mobil (Android + iPhone, Expo / React Native) me Supabase
 
 ## Çfarë ka
 - `supabase/migrations/0001_baza.sql` — kompani, anëtarë, role (admin, staf, grumbullues, fermer), fermerë, zona, produkte, blerje, magazinë, përmbledhje loti. RLS: çdo kompani sheh vetëm të dhënat e veta (testuar në Postgres lokal: `tests/test_baza.sql`).
-- `supabase/functions/reports` — raporte Excel dhe PDF A4 (përmbledhje, fletë vjelje, fermeri, lista e mbledhësve).
+- `supabase/functions/reports` — raporte Excel dhe PDF A4; paketimi, testimi dhe publikimi: `docs/raportet.md`.
 - `supabase/functions/admin-users` — krijim përdoruesish nga admini.
 - `app/` — aplikacioni Expo (hyrje, zgjedhje kompanie, blerje, magazinë, raporte, përdorues; fusha kërkimi me «+ Shto»).
 
 ## APK për telefon (Android)
-Ekzekutoni workflow-in **«Ndërto APK»** te GitHub → Actions (ose thjesht bëni push: ndërtohet vetë). APK-ja shkarkohet nga:
+Workflow-i **«Ndërto APK»** ndërton në PR dhe në degët e provës, por përditëson shkarkimin publik vetëm nga `main`. Ndërtimet e degëve ruhen si artefakte të Actions dhe nuk zëvendësojnë APK-në e publikuar. APK-ja nga `main` shkarkohet nga:
 `https://github.com/genilufra-droid/relikaj-gjurmim/releases/download/apk-latest/BioBes-Farm.apk`
 Ndërtimi zgjat ~12–18 min. Instalimi në telefon: hapeni lidhjen → «Install» (lejoni «Install unknown apps» për shfletuesin). APK-ja nënshkruhet me çelësin e provës së React Native, mjaftueshëm për testim; për Play Store duhet çelës i vetën (`eas build`).
 
@@ -22,8 +22,8 @@ Ndërtimi zgjat ~12–18 min. Instalimi në telefon: hapeni lidhjen → «Instal
 4. `app/src/config.js` është plotësuar tashmë me URL-në dhe çelësin.
 5. `cd app && npm install && npx expo start` (provë me aplikacionin Expo Go), ose `npx expo run:android`. Për dyqanet: `eas build`.
 
-## Çfarë NUK është provuar ende
-Funksionet në Deno/Supabase të vërtetë, aplikacioni në telefon, dhe ekzekutimi i migrimit në projektin real. Kontrolluar: skema + RLS (Postgres lokal), gjenerimi i raporteve, sintaksa e aplikacionit.
+## Provat para publikimit
+Testet lokale nuk zëvendësojnë provën në telefon dhe me një llogari të autorizuar e të dhëna reale. Për funksionin `reports`, kontrolloni gjithashtu nisjen, JWT-në dhe kufizimin midis kompanive pas çdo publikimi; udhëzimet janë te `docs/raportet.md`.
 
 ## Faza 2 (e re)
 Klientë, dërgesa DHL dhe protokolli i mostrave (`0002_mostrat.sql`, ekrani «Mostra», vetëm admin/staf). Faturat DHL/FedEx dhe llogaritë e analizave si raporte vijnë më vonë.
@@ -34,7 +34,7 @@ Parcelat me gjeotagim GPS (koordinata + hartë), kultivimet (mbjellje/vjelje), d
 ## Dizajni dhe dokumentet (v0.2)
 - Ndërfaqe e re profesionale: kryetar me kompaninë/rolin, shirit tab-esh me ikona, kartela KPI, filtra dhe kërkim në çdo listë, gjendje bosh me udhëzim, gabime me «Provo përsëri».
 - **Dokumentet** (`0004_dokumentet.sql`): foto nga kamera ose galeria dhe skedarë PDF/Word/Excel (kontrata, analiza toke, fatura) të lidhura me parcelën; ruhen në Storage `field-docs` / `field-photos`.
-- **Raportet krijohen në telefon** (Excel/PDF me të njëjtin kod si funksioni në server): përmbledhje vjetore, lista e mbledhësve, fletë vjelje, kartelë gjurmueshmërie, **raport parcelash**, **raport inputesh**, **raport detyrash**, përmbledhje fermeri.
+- **Raportet krijohen në telefon** (Excel/PDF me të njëjtin kod si funksioni në server): të dhënat lexohen nga Supabase me lejet e përdoruesit dhe kërkojnë rrjet; aplikacioni nuk varet nga funksioni Edge për gjenerimin e tyre.
 
 ## Faza 5
 Kartela e gjurmueshmërisë (PDF/Excel) për çdo lot: vjelja → magazina → mostrat → inputet. Shembull i gjeneruar: `docs/kartela-gjurmueshmerise-shembull.pdf`. Faturat DHL/FedEx dhe llogaritë e analizave si raporte, import i të dhënave reale, punë pa internet.
@@ -73,11 +73,11 @@ Ekranet **Parcelat, Shpenzimet/Blerjet, Mostrat, Zonat dhe Puna në tokë** bini
 - **Rregullim i vlerës së blerjes:** `purchases.amount` nuk shkruhej kurrë (mbetej 0); tani llogaritet në bazë me trigger (`0009_vlera_e_blerjes.sql`) dhe u plotësuan 11 blerjet ekzistuese — 951.300 lekë që më parë s'shfaqeshin në raporte.
 - Dokumenti: `docs/backup.md` (çka përfshihet, si rikthehet, kufizimet).
 
-## Faza 10 — faturat dhe fletët e magazinës në PDF (v0.10.0)
-- **Katër dokumente zyrtare**, të nxjerra nga të dhënat reale: **faturë shitje** (nga daljet e magazinës), **faturë blerje** (nga blerjet te fermerët), **fletë hyrje** dhe **fletë dalje** (nga magazina). Menuja: *Qendra dhe eksporti → Printo*; shkurtore edhe te «Blerjet» dhe «Magazina».
-- **Modeli fiskal shqiptar** (Ligj 87/2019, Udhëzim 16/2020): titulli «Faturë tatimore» / «Faturë tatimore — Blerje» / «Faturë-Th», shitësi e blerësi me NIPT e adresa, numri i faturës (`FS-2026-0007`), datat, kodi i operatorit, sasia · përshkrimi · çmimi njësi, vlera pa TVSH, TVSH-ja, totali, mënyra e pagesës, monedha, afati, llogaria bankare, **NSLF** dhe **NIVF** me **kod QR**.
-- **NIVF-i nuk krijohet në telefon** — vjen vetëm nga sistemi i fiskalizimit. Pa fiskalizim, fatura printohet me NSLF, pa QR, me shënimin ligjor për transmetimin brenda 48 orëve; kur NIVF-i është i njohur (`fiscal.nivf`), kodi QR vizatohet automatikisht.
-- **Fletët e magazinës**: numri i dokumentit, data, magazina, dokumenti shoqërues, transporti, pala (furnitori / marrësi), artikujt me kod e njësi, sasia e vlera totale, dhe tri nënshkrimet (Dorëzoi · Mori · Magazinieri).
-- **Të dhënat fiskale** plotësohen një herë te *Printo → Të dhënat fiskale* (NIPT, adresa, qyteti, telefoni, email-i, kodi i operatorit, IBAN-i, TVSH-ja); ruhen te `companies` dhe përdoren në çdo dokument. Administruesi i kompanisë i ndryshon vetë (`0011_fiskal_kompania_admin.sql`).
-- **Printimi**: «Printo» hap dialogun e sistemit Android (printer Wi-Fi ose «Ruaj si PDF»); «Nda» e dërgon faturën me WhatsApp, email ose Drive (PDF A4, `expo-print` + `expo-sharing`). Numrat e dokumenteve vijnë nga funksionet `doc_number` dhe `doc_nslf` në bazë.
-- **Testet**: `tests/print_test.js` — 15 raste për formatin e numrave, A4-në, faqet e shumta dhe të katër dokumentet; testi i renderimit mbulon 22 ekrane.
+## Faza 10 — draftet dhe fletët e magazinës në PDF (v0.10.0)
+- Nga të dhënat e blerjeve dhe daljeve krijohen **drafte të brendshme blerjeje/shitjeje**, si dhe **fletë hyrje/dalje**. Menuja: *Qendra dhe eksporti → Printo*; shkurtore edhe te «Blerjet» dhe «Magazina».
+- **Draftet nuk janë fatura të fiskalizuara.** Aplikacioni nuk është i integruar me sistemin e fiskalizimit (CIS) dhe nuk kryen transmetim apo verifikim fiskal. Për faturë fiskale duhet përdorur sistemi përkatës; për kërkesat ligjore konsultohuni me kontabilistin.
+- Çdo faqe e draftit shënohet «DRAFT — JO E FISKALIZUAR». Numri nga `doc_number` është vetëm referencë e brendshme; nuk shfaqen NSLF, NIVF ose QR. Funksioni historik i bazës `doc_nslf` nuk përdoret dhe nuk është kod fiskal i verifikuar.
+- **Kujdes për versionet e mëparshme:** PDF-të e krijuara më parë mund të përmbajnë një pseudo-NSLF lokal dhe formulime të pasakta mbi fiskalizimin. Ato nuk provojnë fiskalizim dhe nuk ndryshohen nga përditësimi.
+- **Fletët e magazinës** përmbajnë numrin e brendshëm të dokumentit, datën, magazinën, palën, artikujt dhe hapësira për nënshkrime.
+- **Të dhënat e kompanisë** te *Printo → Të dhënat fiskale* ruhen te `companies` dhe përdoren në dokumente (`0011_fiskal_kompania_admin.sql`). Printimi dhe ndarja përdorin dialogun Android, `expo-print` dhe `expo-sharing`.
+- **Testet**: `tests/print_test.js` kontrollon PDF-të, formatimin, faqet e shumta dhe paralajmërimin në çdo faqe; testi i renderimit mbulon 22 ekrane.

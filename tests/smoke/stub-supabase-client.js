@@ -1,7 +1,11 @@
 // Klient Supabase i rremë: kthen gjithmonë listë bosh (ose të dhëna të dhëna), pa rrjet.
 const empty = { data: [], error: null, count: 0 };
 let rowsFor = () => [];
+let rpcFor = () => empty;
+let rpcCalls = [];
 export const setRows = (fn) => { rowsFor = fn; };
+export const setRpc = (fn) => { rpcFor = fn; rpcCalls = []; };
+export const getRpcCalls = () => rpcCalls.slice();
 
 const builder = (table) => {
   const q = {
@@ -18,7 +22,7 @@ const builder = (table) => {
 
 export const createClient = () => ({
   from: (t) => builder(t),
-  rpc: () => Promise.resolve(empty),
+  rpc: (name, args) => { rpcCalls.push({ name, args }); return Promise.resolve(rpcFor(name, args)); },
   channel: () => ({ on: () => ({ subscribe: () => ({}) }) }),
   removeChannel: () => {},
   storage: { from: () => ({ upload: async () => ({}), getPublicUrl: () => ({ data: { publicUrl: "" } }), createSignedUrl: async () => ({ data: { signedUrl: "" } }) }) },
